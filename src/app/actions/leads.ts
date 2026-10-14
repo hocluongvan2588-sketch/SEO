@@ -9,7 +9,6 @@ import {
   type LinkedInCandidate,
 } from "@/lib/brightdata";
 import { fail, type ActionResult } from "@/lib/context";
-import { countryName } from "@/lib/locales";
 import { staffLocale } from "@/lib/staff-locale";
 import { getSession } from "@/lib/supabase/server";
 import type { Lead, LeadStatus, Project } from "@/lib/types";
@@ -23,12 +22,24 @@ async function loadProject(projectId: string) {
   return { session, project: data as Project };
 }
 
-/** Câu truy vấn Google tìm hồ sơ LinkedIn công khai theo sản phẩm + chức danh + thị trường */
-function buildQuery(product: string, roles: string[], country: string, extra: string) {
+/**
+ * Các câu truy vấn Google từ chặt đến rộng. Buyer hiếm khi ghi đúng tên sản phẩm trên hồ sơ
+ * (họ ghi "nuts", "food importer"…), nên nới dần:
+ *  1. đúng cụm sản phẩm  2. các từ của sản phẩm  3. theo nhóm ngành (importer / distributor / wholesale)
+ * Thị trường lọc qua Google của nước đó (gl), không đưa tên nước vào câu vì hồ sơ thường chỉ ghi thành phố.
+ */
+function buildQueries(product: string, roles: string[], extra: string) {
   const roleExpr = roles.length ? `(${roles.map((r) => `"${r}"`).join(" OR ")})` : "";
-  return ["site:linkedin.com/in", roleExpr, product.trim() && `"${product.trim()}"`, extra.trim(), `"${countryName(country, "en")}"`]
-    .filter(Boolean)
-    .join(" ");
+  const p = product.trim().replace(/"/g, "");
+  const ex = extra.trim();
+  const join = (...parts: string[]) => ["site:linkedin.com/in", roleExpr, ...parts].filter(Boolean).join(" ");
+  return Array.from(
+    new Set([
+      join(`"${p}"`, ex),
+      join(p, ex),
+      join(ex || "food", "(importer OR import OR distributor OR distribution OR wholesale)"),
+    ]),
+  );
 }
 
 export interface BuyerSearchResult {
@@ -47,11 +58,14 @@ export async function searchBuyers(input: {
   try {
     const { session, project } = await loadProject(input.projectId);
     if (!input.product.trim()) throw new Error("Product is required");
-    const query = buildQuery(input.product, input.roles, input.country, input.extra);
-    const { result: candidates, costUsd } = await metered(
+    const {
+      result: { candidates, queriesUsed },
+      costUsd,
+    } = await metered(
       { supabase: session.supabase, userId: session.user.id, projectId: project.id, feature: "leads", providers: ["brightdata"] },
-      () => findLinkedInProfiles(query, { gl: input.country, pages: 2 }),
+      () => findLinkedInProfiles(buildQueries(input.product, input.roles, input.extra), { gl: input.country, target: 20 }),
     );
+    const query = queriesUsed.join("\n");
     const { data: existing } = await session.supabase
       .from("leads")
       .select("linkedin_url")

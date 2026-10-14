@@ -183,7 +183,7 @@ export function FindPanel({ project, canWrite, onSaved }: { project: Project; ca
         <Card>
           <CardHeader
             title={t("results", { count: result.candidates.length })}
-            description={<span className="break-all font-mono text-xs">{result.query}</span>}
+            description={<span className="whitespace-pre-line break-all font-mono text-xs">{result.query}</span>}
           />
           {result.candidates.length === 0 ? (
             <p className="px-5 py-10 text-center text-sm text-muted">{t("noResults")}</p>

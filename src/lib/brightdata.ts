@@ -259,23 +259,33 @@ export function normalizeLinkedInUrl(raw: string): string | null {
 
 /**
  * Tìm hồ sơ LinkedIn công khai qua Google (zone SERP sẵn có).
+ * Chạy lần lượt các câu truy vấn từ chặt đến rộng, dừng khi đủ `target` hồ sơ.
  * Mỗi trang 10 kết quả = 1 request SERP.
  */
-export async function findLinkedInProfiles(query: string, opts: { gl: string; pages?: number }): Promise<LinkedInCandidate[]> {
+export async function findLinkedInProfiles(
+  queries: string[],
+  opts: { gl: string; target?: number },
+): Promise<{ candidates: LinkedInCandidate[]; queriesUsed: string[] }> {
+  const target = opts.target ?? 20;
   const seen = new Map<string, LinkedInCandidate>();
-  for (let page = 0; page < (opts.pages ?? 2); page++) {
-    const serp = await googleSearch(query, { hl: "en", gl: opts.gl, start: page * 10 });
-    for (const o of serp.organic) {
-      const url = normalizeLinkedInUrl(o.link);
-      if (!url || seen.has(url)) continue;
-      // Tiêu đề Google dạng "Jane Doe - Purchasing Manager - Acme Foods | LinkedIn"
-      const title = o.title.replace(/\s*[|·]\s*LinkedIn.*$/i, "");
-      const [name, ...rest] = title.split(/\s+[-–—]\s+/);
-      seen.set(url, { url, name: name?.trim() ?? "", headline: rest.join(" · ").trim(), snippet: o.description });
+  const queriesUsed: string[] = [];
+  for (const query of queries) {
+    if (seen.size >= target) break;
+    queriesUsed.push(query);
+    for (let page = 0; page < 2 && seen.size < target; page++) {
+      const serp = await googleSearch(query, { hl: "en", gl: opts.gl, start: page * 10 });
+      for (const o of serp.organic) {
+        const url = normalizeLinkedInUrl(o.link);
+        if (!url || seen.has(url)) continue;
+        // Tiêu đề Google dạng "Jane Doe - Purchasing Manager - Acme Foods | LinkedIn"
+        const title = o.title.replace(/\s*[|·]\s*LinkedIn.*$/i, "");
+        const [name, ...rest] = title.split(/\s+[-–—|]\s+/);
+        seen.set(url, { url, name: name?.trim() ?? "", headline: rest.join(" · ").trim(), snippet: o.description });
+      }
+      if (serp.organic.length < 8) break; // hết kết quả cho câu này
     }
-    if (serp.organic.length < 8) break;
   }
-  return [...seen.values()];
+  return { candidates: [...seen.values()].slice(0, target), queriesUsed };
 }
 
 export interface LinkedInProfile {
