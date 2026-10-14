@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { analyzeKeywords, clusterKeywords, type KeywordAnalysis } from "@/lib/ai";
-import { findRank, googleSearch, type SerpResult } from "@/lib/brightdata";
+import { googleSearch, type SerpResult } from "@/lib/brightdata";
 import { fail, type ActionResult } from "@/lib/context";
+import { checkKeywordRanks } from "@/lib/rank-check";
 import { metered } from "@/lib/usage";
 import { staffLocale } from "@/lib/staff-locale";
 import { getSession } from "@/lib/supabase/server";
@@ -170,6 +171,24 @@ export async function deleteKeywords(ids: string[]): Promise<ActionResult> {
   }
 }
 
+/** Đánh dấu trang của từ khóa vừa được cập nhật nội dung → tự động kiểm tra dày hơn trong 30 ngày. */
+export async function markContentUpdated(ids: string[]): Promise<ActionResult> {
+  try {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized");
+    const { error } = await session.supabase
+      .from("keywords")
+      .update({ content_updated_at: new Date().toISOString() })
+      .in("id", ids);
+    if (error) throw error;
+    revalidatePath("/keywords");
+    revalidatePath("/rankings");
+    return { ok: true, data: undefined };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 /** Claude gom cụm toàn bộ từ khóa (hoặc từ khóa được chọn) của dự án. */
 export async function clusterProjectKeywords(projectId: string, ids?: string[]): Promise<ActionResult<{ clusters: number }>> {
   try {
@@ -217,37 +236,8 @@ export async function checkRankings(
       costUsd,
     } = await metered(
       { supabase: session.supabase, userId: session.user.id, projectId, feature: "rankings", providers: ["brightdata"] },
-      async () => {
-        let found = 0;
-        let skipped = 0;
-        let lastError = "";
-        for (const row of rows ?? []) {
-          // Một từ khóa lỗi (vd. Bright Data tạm khóa câu đó) không làm hỏng cả lượt — bỏ qua, giữ thứ hạng cũ
-          let rank: { position: number | null; url: string | null };
-          try {
-            rank = await findRank(row.keyword, project.domain, { hl: row.locale, gl: row.country || project.country });
-          } catch (err) {
-            skipped++;
-            lastError = err instanceof Error ? err.message : String(err);
-            continue;
-          }
-          const { position, url } = rank;
-          if (position) found++;
-          const now = new Date().toISOString();
-          await session.supabase.from("rank_checks").insert({ keyword_id: row.id, position, url, checked_at: now });
-          await session.supabase
-            .from("keywords")
-            .update({
-              current_position: position,
-              best_position:
-                position && (!row.best_position || position < row.best_position) ? position : row.best_position,
-              target_url: url ?? undefined,
-              last_checked_at: now,
-            })
-            .eq("id", row.id);
-        }
-        return { found, skipped, lastError };
-      },
+      // Một từ khóa lỗi (vd. Bright Data tạm khóa câu đó) không làm hỏng cả lượt — bỏ qua, giữ thứ hạng cũ
+      () => checkKeywordRanks(session.supabase, project, rows ?? []),
     );
     const total = rows?.length ?? 0;
     if (total > 0 && skipped === total) throw new Error(lastError);

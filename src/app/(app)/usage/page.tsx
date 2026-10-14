@@ -61,7 +61,7 @@ export default async function UsagePage() {
   const byUser = Array.from(new Set(rows.map((r) => r.user_id)))
     .map((id) => {
       const list = rows.filter((r) => r.user_id === id);
-      return { id, name: (id && names.get(id)) || "—", claude: sum(list, "claude"), bd: sum(list, "brightdata"), total: sum(list) };
+      return { id, name: id ? names.get(id) || "—" : t("auto"), claude: sum(list, "claude"), bd: sum(list, "brightdata"), total: sum(list) };
     })
     .sort((a, b) => b.total - a.total);
 
@@ -209,7 +209,7 @@ export default async function UsagePage() {
                   <Badge tone={r.provider === "claude" ? "primary" : "info"}>{r.provider === "claude" ? "Claude" : "Bright Data"}</Badge>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-text">
-                      {t(`features.${r.feature}`)} · {(r.user_id && names.get(r.user_id)) || "—"}
+                      {t(`features.${r.feature}`)} · {r.user_id ? names.get(r.user_id) || "—" : t("auto")}
                     </div>
                     <div className="truncate text-xs text-muted">
                       {r.provider === "claude"

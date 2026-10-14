@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { BarChart3, Download, Layers, Plus, Search, Sparkles, Trash2 } from "lucide-react";
+import { BarChart3, Download, FilePenLine, Layers, Plus, Search, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   addKeywordsManually,
@@ -11,6 +11,7 @@ import {
   checkRankings,
   clusterProjectKeywords,
   deleteKeywords,
+  markContentUpdated,
   updateKeyword,
 } from "@/app/actions/keywords";
 import { DifficultyBar, IntentBadge, PositionBadge, PriorityBadge } from "@/components/keyword-bits";
@@ -246,6 +247,10 @@ export function KeywordTable({
           >
             <BarChart3 className="h-3.5 w-3.5" />
             {t("checkRank")}
+          </Button>
+          <Button size="sm" variant="secondary" loading={busy === "fresh"} onClick={() => act("fresh", () => markContentUpdated(ids), t("markedUpdated"))}>
+            <FilePenLine className="h-3.5 w-3.5" />
+            {t("markUpdated")}
           </Button>
           <Button size="sm" variant="secondary" loading={busy === "cluster"} onClick={() => act("cluster", () => clusterProjectKeywords(project.id, ids), t("clustered"))}>
             <Sparkles className="h-3.5 w-3.5" />

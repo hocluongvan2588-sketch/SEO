@@ -62,3 +62,17 @@ export async function deleteProject(id: string): Promise<ActionResult> {
     return fail(e);
   }
 }
+
+/** Bật/tắt tự động kiểm tra thứ hạng (T2/T4/T6 lúc 6:00) cho dự án. */
+export async function setAutoRankCheck(id: string, enabled: boolean): Promise<ActionResult> {
+  try {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized");
+    const { error } = await session.supabase.from("projects").update({ auto_rank_check: enabled }).eq("id", id);
+    if (error) throw error;
+    revalidatePath("/rankings");
+    return { ok: true, data: undefined };
+  } catch (e) {
+    return fail(e);
+  }
+}

@@ -138,7 +138,9 @@
     },
     "allMarkets": "Mọi thị trường",
     "market": "Thị trường",
-    "rankSkipped": "{count} từ khóa tạm bỏ qua, thử lại sau 5–10 phút"
+    "rankSkipped": "{count} từ khóa tạm bỏ qua, thử lại sau 5–10 phút",
+    "markUpdated": "Vừa cập nhật nội dung",
+    "markedUpdated": "Đã đánh dấu — sẽ kiểm tra 3 lần/tuần trong 30 ngày"
   },
   "research": {
     "seedPh": "Nhập từ khóa gốc, ví dụ: phần mềm quản lý kho",
@@ -356,7 +358,17 @@
     "trend": "Xu hướng",
     "checked": "Lần kiểm tra",
     "skipped": "{count} từ khóa tạm thời chưa kiểm tra được (Bright Data tạm khóa), thử lại sau 5–10 phút",
-    "allSkipped": "Chưa kiểm tra được từ khóa nào, hãy thử lại sau 5–10 phút"
+    "allSkipped": "Chưa kiểm tra được từ khóa nào, hãy thử lại sau 5–10 phút",
+    "auto": "Tự động",
+    "autoOn": "Đã bật tự động kiểm tra thứ hạng",
+    "autoOff": "Đã tắt tự động kiểm tra thứ hạng",
+    "autoScheduleOn": "Tự động kiểm tra: T2, T4, T6 lúc 6:00 sáng",
+    "autoScheduleOff": "Tự động kiểm tra đang tắt cho dự án này",
+    "autoRule": "Từ khóa thường 1 lần/tuần; bài mới đăng/cập nhật trong 30 ngày ({fresh} từ khóa) 3 lần/tuần",
+    "autoLast": "Lần chạy gần nhất {when}: {count} từ khóa",
+    "autoBudgetStop": "dừng vì hết ngân sách Bright Data",
+    "autoBudgetFresh": "ngân sách ≥80% nên chỉ kiểm tra bài mới",
+    "freshBadge": "Mới"
   },
   "settings": {
     "title": "Cài đặt",
@@ -428,7 +440,8 @@
     "requests": "{count} request",
     "estimateNote": "Chi phí Claude được tính từ số token và bảng giá công bố, có thể lệch nhỏ so với hóa đơn. Bright Data tính $1.50 / 1.000 request thành công.",
     "notReady": "Chưa bật theo dõi chi phí",
-    "notReadyDesc": "Chạy file supabase/migrations/0004_usage_and_budgets.sql trong Supabase SQL Editor rồi tải lại trang."
+    "notReadyDesc": "Chạy file supabase/migrations/0004_usage_and_budgets.sql trong Supabase SQL Editor rồi tải lại trang.",
+    "auto": "Tự động (lịch)"
   },
   "leads": {
     "title": "Khách hàng tiềm năng",

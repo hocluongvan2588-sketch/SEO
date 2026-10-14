@@ -20,6 +20,8 @@ export interface Project {
   country: string;
   /** Các thị trường (mã quốc gia) mục tiêu */
   markets: string[];
+  /** Tự động kiểm tra thứ hạng theo lịch (migration 0006) */
+  auto_rank_check?: boolean;
   created_at: string;
 }
 
@@ -43,6 +45,8 @@ export interface Keyword {
   current_position: number | null;
   best_position: number | null;
   last_checked_at: string | null;
+  /** Lần đăng/cập nhật nội dung gần nhất (migration 0006) */
+  content_updated_at?: string | null;
   notes: string | null;
   created_at: string;
 }

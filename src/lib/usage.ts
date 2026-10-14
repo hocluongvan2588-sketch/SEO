@@ -79,7 +79,8 @@ export async function getMonthSpend(supabase: SupabaseClient): Promise<MonthSpen
 
 export interface MeteredContext {
   supabase: SupabaseClient;
-  userId: string;
+  /** null = chạy tự động (cron) */
+  userId: string | null;
   projectId?: string | null;
   feature: "research" | "cluster" | "rankings" | "audit" | "schema" | "leads";
   /** Dịch vụ thao tác này sẽ dùng — chặn trước nếu đã hết ngân sách */

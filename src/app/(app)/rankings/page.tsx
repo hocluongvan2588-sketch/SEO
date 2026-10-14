@@ -1,11 +1,13 @@
 import { getFormatter, getTranslations } from "next-intl/server";
-import { ArrowDown, ArrowUp, BarChart3, Minus } from "lucide-react";
+import { ArrowDown, ArrowUp, BarChart3, CalendarClock, Minus } from "lucide-react";
 import { NoProject } from "@/components/no-project";
 import { PositionBadge } from "@/components/keyword-bits";
 import { Card, EmptyState, PageHeader } from "@/components/ui";
 import { getWorkspace } from "@/lib/context";
 import { countryName, flag } from "@/lib/locales";
 import { getLocale } from "next-intl/server";
+import { isFresh } from "@/lib/rank-check";
+import { AutoCheckToggle } from "./auto-toggle";
 import { CheckAllButton } from "./check-all";
 
 export const maxDuration = 300;
@@ -19,7 +21,7 @@ export default async function RankingsPage() {
 
   const { data: keywords } = await supabase
     .from("keywords")
-    .select("id, keyword, locale, country, current_position, best_position, last_checked_at, target_url, status")
+    .select("*")
     .eq("project_id", active.id)
     .neq("status", "ignored")
     .order("current_position", { ascending: true, nullsFirst: false })
@@ -37,6 +39,16 @@ export default async function RankingsPage() {
     history.set(c.keyword_id, arr);
   }
 
+  const { data: lastRun } = await supabase
+    .from("cron_runs")
+    .select("finished_at, checked, note")
+    .eq("job", "rankings")
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const freshCount = (keywords ?? []).filter((k) => isFresh(k)).length;
+  const autoReady = active.auto_rank_check !== undefined; // migration 0006 đã chạy
+
   const tracked = (keywords ?? []).filter((k) => k.last_checked_at);
   const top3 = tracked.filter((k) => k.current_position && k.current_position <= 3).length;
   const top10 = tracked.filter((k) => k.current_position && k.current_position <= 10).length;
@@ -49,6 +61,29 @@ export default async function RankingsPage() {
         description={t("subtitle", { domain: active.domain })}
         actions={profile?.role !== "viewer" && <CheckAllButton projectId={active.id} ids={ids} />}
       />
+
+      {autoReady && (
+        <Card className="mb-6 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <CalendarClock className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div className="min-w-0 text-sm">
+              <div className="font-medium text-text">{active.auto_rank_check ? t("autoScheduleOn") : t("autoScheduleOff")}</div>
+              <div className="text-muted">
+                {t("autoRule", { fresh: freshCount })}
+                {lastRun?.finished_at && (
+                  <>
+                    {" · "}
+                    {t("autoLast", { when: format.relativeTime(new Date(lastRun.finished_at)), count: lastRun.checked })}
+                    {lastRun.note === "budget_exceeded" && ` · ${t("autoBudgetStop")}`}
+                    {lastRun.note === "budget_warning_fresh_only" && ` · ${t("autoBudgetFresh")}`}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          <AutoCheckToggle projectId={active.id} enabled={!!active.auto_rank_check} disabled={profile?.role === "viewer"} />
+        </Card>
+      )}
 
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
@@ -88,7 +123,14 @@ export default async function RankingsPage() {
                   return (
                     <tr key={k.id} className="hover:bg-surface-2/50">
                       <td className="px-5 py-2.5">
-                        <div className="font-medium text-text">{k.keyword}</div>
+                        <div className="font-medium text-text">
+                          {k.keyword}
+                          {isFresh(k) && (
+                            <span className="ml-2 rounded bg-primary-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase text-primary">
+                              {t("freshBadge")}
+                            </span>
+                          )}
+                        </div>
                         <div className="text-xs text-muted">
                           {flag(k.country)} {countryName(k.country, ui)} · {k.locale}
                         </div>
