@@ -346,7 +346,8 @@ function parseRecords(text: string): unknown[] {
 export async function scrapeLinkedInProfiles(urls: string[]): Promise<LinkedInProfile[]> {
   const input = urls.slice(0, 20).map((url) => ({ url }));
   if (!input.length) return [];
-  const qs = `dataset_id=${LINKEDIN_PROFILE_DATASET}&format=json&include_errors=true`;
+  // notify=false: không gửi email thông báo cho mỗi lần nhân viên lấy hồ sơ
+  const qs = `dataset_id=${LINKEDIN_PROFILE_DATASET}&format=json&include_errors=true&notify=false`;
   const res = await datasetsFetch(`/scrape?${qs}`, { method: "POST", body: JSON.stringify({ input }) });
 
   let records: unknown[];
