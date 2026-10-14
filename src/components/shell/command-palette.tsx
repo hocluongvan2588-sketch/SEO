@@ -20,10 +20,12 @@ export function CommandPalette({
   open,
   onClose,
   projects,
+  isAdmin,
 }: {
   open: boolean;
   onClose: () => void;
   projects: { id: string; name: string; domain: string }[];
+  isAdmin: boolean;
 }) {
   const t = useTranslations("nav");
   const tp = useTranslations("palette");
@@ -48,7 +50,7 @@ export function CommandPalette({
       { id: "a-audit", label: tp("audit"), icon: ScanSearch, run: go("/audits") },
       { id: "a-schema", label: tp("schema"), icon: Braces, run: go("/schemas") },
       { id: "a-project", label: tp("newProject"), icon: Plus, run: go("/projects?new=1") },
-      ...NAV.map((n) => ({ id: `n-${n.href}`, label: t(n.key), hint: tp("goTo"), icon: n.icon, run: go(n.href) })),
+      ...NAV.filter((n) => !n.adminOnly || isAdmin).map((n) => ({ id: `n-${n.href}`, label: t(n.key), hint: tp("goTo"), icon: n.icon, run: go(n.href) })),
       ...projects.map((p) => ({
         id: `p-${p.id}`,
         label: p.name,
@@ -63,7 +65,7 @@ export function CommandPalette({
     ];
     const q = query.trim().toLowerCase();
     return q ? all.filter((i) => `${i.label} ${i.hint ?? ""}`.toLowerCase().includes(q)) : all;
-  }, [query, projects, router, t, tp]);
+  }, [query, projects, router, t, tp, isAdmin]);
 
   if (!open) return null;
 

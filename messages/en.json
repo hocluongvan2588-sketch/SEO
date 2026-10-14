@@ -20,7 +20,11 @@
       "unknown": "Unknown role"
     },
     "profileMissingTitle": "Could not load this account’s profile",
-    "profileMissingDesc": "Account {email} (ID: {id}) has no row in the profiles table, so its role is unknown. Run supabase/migrations/0002_international_and_profiles.sql in the Supabase SQL Editor and reload."
+    "profileMissingDesc": "Account {email} (ID: {id}) has no row in the profiles table, so its role is unknown. Run supabase/migrations/0002_international_and_profiles.sql in the Supabase SQL Editor and reload.",
+    "usage": "Costs",
+    "budgetNear": "{provider} has used {pct}% of this month’s budget.",
+    "budgetOver": "{provider} is over this month’s budget ({pct}%) — features using it are paused.",
+    "budgetManage": "Manage budgets"
   },
   "palette": {
     "placeholder": "Search actions, projects…",
@@ -34,7 +38,8 @@
   "common": {
     "noProjectTitle": "Start by creating a project",
     "noProjectDesc": "Each project is a company website with its domain, market and target languages.",
-    "createProject": "Create project"
+    "createProject": "Create project",
+    "cost": "Estimated cost: {cost}"
   },
   "login": {
     "title": "Sign in to SEO Hub",
@@ -156,7 +161,8 @@
     "gaps": "Content gaps",
     "competitors": "SERP competitors",
     "paa": "People also ask",
-    "related": "Related searches (click to research further)"
+    "related": "Related searches (click to research further)",
+    "done": "Research complete"
   },
   "projects": {
     "title": "Projects",
@@ -328,7 +334,8 @@
       "headline": "Headline",
       "author": "Author",
       "datePublished": "Published date (YYYY-MM-DD)"
-    }
+    },
+    "generated": "Schema generated"
   },
   "rankings": {
     "title": "Rankings",
@@ -371,5 +378,50 @@
     "all": "All countries",
     "empty": "No results",
     "addMarket": "+ Add market"
+  },
+  "usage": {
+    "title": "Costs",
+    "subtitle": "Claude API and Bright Data spend this month against budget",
+    "provider": {
+      "claude": "Claude API",
+      "brightdata": "Bright Data"
+    },
+    "state": {
+      "success": "Within budget",
+      "warning": "Nearly used",
+      "danger": "Over budget"
+    },
+    "ofBudget": "of {budget}/month budget",
+    "balances": "Account balances",
+    "unavailable": "Unavailable",
+    "pending": "Pending charges",
+    "openConsole": "View in Claude Console",
+    "balanceNote": "The Claude balance is only shown in Claude Console; the app holds no admin key.",
+    "byFeature": "By feature",
+    "byUser": "By staff member",
+    "feature": "Feature",
+    "staff": "Staff",
+    "total": "Total",
+    "features": {
+      "research": "Keyword research",
+      "audit": "SEO audit",
+      "schema": "Schema from URL",
+      "rankings": "Rank checks",
+      "cluster": "AI clustering"
+    },
+    "budgets": "Monthly budgets",
+    "budgetsDesc": "80% shows a warning; 100% pauses that service’s paid features",
+    "claudeBudget": "Claude API (USD/month)",
+    "bdBudget": "Bright Data (USD/month)",
+    "budgetHint": "Budgets reset on the 1st of each month. Set 0 to block a service entirely.",
+    "save": "Save budgets",
+    "saved": "Budgets saved",
+    "recent": "Recent activity",
+    "empty": "No spend this month yet",
+    "tokens": "{model} · {input} tokens in, {output} out",
+    "requests": "{count} requests",
+    "estimateNote": "Claude cost is computed from tokens and published prices and may differ slightly from the invoice. Bright Data is $1.50 per 1,000 successful requests.",
+    "notReady": "Cost tracking is not enabled",
+    "notReadyDesc": "Run supabase/migrations/0004_usage_and_budgets.sql in the Supabase SQL Editor and reload."
   }
 }

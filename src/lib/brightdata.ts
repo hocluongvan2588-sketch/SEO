@@ -1,4 +1,5 @@
 import "server-only";
+import { recordBrightData } from "./usage";
 
 const ENDPOINT = "https://api.brightdata.com/request";
 
@@ -34,7 +35,10 @@ async function request(zone: string, url: string, country?: string): Promise<{ b
       });
       const body = await res.text();
       const timedOut = /^\s*timeout\s*$/i.test(body);
-      if (res.ok && !timedOut) return { body, status: res.status };
+      if (res.ok && !timedOut) {
+        recordBrightData(1);
+        return { body, status: res.status };
+      }
       lastError = `Bright Data ${res.status}: ${body.slice(0, 200)}`;
       if (!RETRYABLE.has(res.status) && !timedOut) break;
     } catch (err) {
@@ -137,4 +141,22 @@ export async function findRank(
     offset += serp.organic.length;
   }
   return { position: null, url: null };
+}
+
+/** Số dư tài khoản Bright Data (USD). null nếu chưa cấu hình hoặc API lỗi. */
+export async function getBalance(): Promise<{ balance: number; pending: number } | null> {
+  const apiKey = process.env.BRIGHTDATA_API_TOKEN;
+  if (!apiKey) return null;
+  try {
+    const res = await fetch("https://api.brightdata.com/customer/balance", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      cache: "no-store",
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { balance?: number; pending_balance?: number };
+    return { balance: Number(data.balance ?? 0), pending: Number(data.pending_balance ?? 0) };
+  } catch {
+    return null;
+  }
 }

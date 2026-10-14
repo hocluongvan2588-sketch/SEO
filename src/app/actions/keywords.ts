@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { analyzeKeywords, clusterKeywords, type KeywordAnalysis } from "@/lib/ai";
 import { findRank, googleSearch, type SerpResult } from "@/lib/brightdata";
 import { fail, type ActionResult } from "@/lib/context";
+import { metered } from "@/lib/usage";
 import { staffLocale } from "@/lib/staff-locale";
 import { getSession } from "@/lib/supabase/server";
 import type { KeywordStatus, Priority, Project } from "@/lib/types";
@@ -20,6 +21,8 @@ export interface ResearchResult {
   researchId: string;
   serp: SerpResult;
   ai: KeywordAnalysis;
+  /** Chi phí ước tính của lần chạy này (USD) */
+  costUsd?: number;
 }
 
 /** Lấy SERP thật qua Bright Data → Claude phân tích → lưu lịch sử nghiên cứu. */
@@ -33,8 +36,18 @@ export async function runKeywordResearch(input: {
     const { session, project } = await loadProject(input.projectId);
     const seed = input.seed.trim();
     if (!seed) throw new Error("Seed keyword is required");
-    const serp = await googleSearch(seed, { hl: input.locale, gl: input.country });
-    const ai = await analyzeKeywords({ project, seed, locale: input.locale, country: input.country, serp, staffLocale: await staffLocale() });
+    const lang = await staffLocale();
+    const {
+      result: { serp, ai },
+      costUsd,
+    } = await metered(
+      { supabase: session.supabase, userId: session.user.id, projectId: project.id, feature: "research", providers: ["brightdata", "claude"] },
+      async () => {
+        const serp = await googleSearch(seed, { hl: input.locale, gl: input.country });
+        const ai = await analyzeKeywords({ project, seed, locale: input.locale, country: input.country, serp, staffLocale: lang });
+        return { serp, ai };
+      },
+    );
     const { data, error } = await session.supabase
       .from("keyword_research")
       .insert({
@@ -49,7 +62,7 @@ export async function runKeywordResearch(input: {
       .select("id")
       .single();
     if (error) throw error;
-    return { ok: true, data: { researchId: data.id, serp, ai } };
+    return { ok: true, data: { researchId: data.id, serp, ai, costUsd } };
   } catch (e) {
     return fail(e);
   }
@@ -166,7 +179,11 @@ export async function clusterProjectKeywords(projectId: string, ids?: string[]):
     const { data: rows, error } = await q.limit(400);
     if (error) throw error;
     if (!rows?.length) throw new Error("No keywords to cluster");
-    const result = await clusterKeywords({ project, keywords: rows.map((r) => r.keyword), staffLocale: await staffLocale() });
+    const lang = await staffLocale();
+    const { result } = await metered(
+      { supabase: session.supabase, userId: session.user.id, projectId, feature: "cluster", providers: ["claude"] },
+      () => clusterKeywords({ project, keywords: rows.map((r) => r.keyword), staffLocale: lang }),
+    );
     const byKeyword = new Map(rows.map((r) => [r.keyword.toLowerCase(), r.id]));
     await Promise.all(
       result.clusters.flatMap((c) =>
@@ -184,7 +201,10 @@ export async function clusterProjectKeywords(projectId: string, ids?: string[]):
 }
 
 /** Kiểm tra thứ hạng Google (top 30) cho các từ khóa được chọn. */
-export async function checkRankings(projectId: string, ids: string[]): Promise<ActionResult<{ checked: number; found: number }>> {
+export async function checkRankings(
+  projectId: string,
+  ids: string[],
+): Promise<ActionResult<{ checked: number; found: number; costUsd: number }>> {
   try {
     const { session, project } = await loadProject(projectId);
     const { data: rows, error } = await session.supabase
@@ -192,26 +212,32 @@ export async function checkRankings(projectId: string, ids: string[]): Promise<A
       .select("id, keyword, locale, country, best_position")
       .in("id", ids.slice(0, 25));
     if (error) throw error;
-    let found = 0;
-    for (const row of rows ?? []) {
-      const { position, url } = await findRank(row.keyword, project.domain, { hl: row.locale, gl: row.country || project.country });
-      if (position) found++;
-      const now = new Date().toISOString();
-      await session.supabase.from("rank_checks").insert({ keyword_id: row.id, position, url, checked_at: now });
-      await session.supabase
-        .from("keywords")
-        .update({
-          current_position: position,
-          best_position:
-            position && (!row.best_position || position < row.best_position) ? position : row.best_position,
-          target_url: url ?? undefined,
-          last_checked_at: now,
-        })
-        .eq("id", row.id);
-    }
+    const { result: found, costUsd } = await metered(
+      { supabase: session.supabase, userId: session.user.id, projectId, feature: "rankings", providers: ["brightdata"] },
+      async () => {
+        let found = 0;
+        for (const row of rows ?? []) {
+          const { position, url } = await findRank(row.keyword, project.domain, { hl: row.locale, gl: row.country || project.country });
+          if (position) found++;
+          const now = new Date().toISOString();
+          await session.supabase.from("rank_checks").insert({ keyword_id: row.id, position, url, checked_at: now });
+          await session.supabase
+            .from("keywords")
+            .update({
+              current_position: position,
+              best_position:
+                position && (!row.best_position || position < row.best_position) ? position : row.best_position,
+              target_url: url ?? undefined,
+              last_checked_at: now,
+            })
+            .eq("id", row.id);
+        }
+        return found;
+      },
+    );
     revalidatePath("/keywords");
     revalidatePath("/rankings");
-    return { ok: true, data: { checked: rows?.length ?? 0, found } };
+    return { ok: true, data: { checked: rows?.length ?? 0, found, costUsd } };
   } catch (e) {
     return fail(e);
   }

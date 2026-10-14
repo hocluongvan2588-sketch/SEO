@@ -10,6 +10,7 @@ import { DifficultyBar, IntentBadge, PriorityBadge } from "@/components/keyword-
 import { Badge, Button, Card, CardHeader, Input, Select } from "@/components/ui";
 import { countryName, defaultCountryFor, flag, languageName } from "@/lib/locales";
 import { CountrySelect } from "@/components/ui/country-picker";
+import { useCostLabel } from "@/components/use-cost";
 import type { Project } from "@/lib/types";
 
 export function ResearchPanel({
@@ -25,6 +26,7 @@ export function ResearchPanel({
 }) {
   const t = useTranslations("research");
   const ui = useLocale();
+  const costLabel = useCostLabel();
   const markets = project.markets?.length ? project.markets : [project.country];
   const format = useFormatter();
   const router = useRouter();
@@ -50,6 +52,8 @@ export function ResearchPanel({
       const res = await runKeywordResearch({ projectId: project.id, seed, locale, country });
       if (!res.ok) return void toast.error(t("failed"), { description: res.error });
       setResult({ ...res.data, locale, country });
+      const cost = costLabel(res.data.costUsd);
+      if (cost) toast.success(t("done"), { description: cost });
       setSelected(new Set(res.data.ai.keywords.map((_, i) => i).filter((i) => res.data.ai.keywords[i].priority !== "low")));
       router.refresh();
     });
@@ -153,7 +157,10 @@ export function ResearchPanel({
             <div className="flex gap-3">
               <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
               <div>
-                <div className="font-medium text-text">{t("summary")}</div>
+                <div className="flex flex-wrap items-baseline gap-x-3 font-medium text-text">
+                  {t("summary")}
+                  {costLabel(result.costUsd) && <span className="text-xs font-normal text-muted">{costLabel(result.costUsd)}</span>}
+                </div>
                 <p className="mt-1 text-sm leading-relaxed text-text/80">{result.ai.summary}</p>
               </div>
             </div>

@@ -20,7 +20,11 @@
       "unknown": "Chưa rõ quyền"
     },
     "profileMissingTitle": "Không đọc được hồ sơ (profile) của tài khoản này",
-    "profileMissingDesc": "Tài khoản {email} (ID: {id}) chưa có dòng trong bảng profiles nên chưa xác định được quyền. Hãy chạy file supabase/migrations/0002_international_and_profiles.sql trong Supabase SQL Editor rồi tải lại trang."
+    "profileMissingDesc": "Tài khoản {email} (ID: {id}) chưa có dòng trong bảng profiles nên chưa xác định được quyền. Hãy chạy file supabase/migrations/0002_international_and_profiles.sql trong Supabase SQL Editor rồi tải lại trang.",
+    "usage": "Chi phí",
+    "budgetNear": "{provider} đã dùng {pct}% ngân sách tháng này.",
+    "budgetOver": "{provider} đã hết ngân sách tháng này ({pct}%) — các chức năng dùng dịch vụ này tạm khóa.",
+    "budgetManage": "Quản lý ngân sách"
   },
   "palette": {
     "placeholder": "Tìm chức năng, dự án…",
@@ -34,7 +38,8 @@
   "common": {
     "noProjectTitle": "Bắt đầu bằng việc tạo dự án",
     "noProjectDesc": "Mỗi dự án là một website doanh nghiệp với domain, thị trường và ngôn ngữ mục tiêu.",
-    "createProject": "Tạo dự án"
+    "createProject": "Tạo dự án",
+    "cost": "Chi phí ước tính: {cost}"
   },
   "login": {
     "title": "Đăng nhập SEO Hub",
@@ -156,7 +161,8 @@
     "gaps": "Khoảng trống nội dung",
     "competitors": "Đối thủ trên SERP",
     "paa": "Mọi người cũng hỏi",
-    "related": "Tìm kiếm liên quan (bấm để nghiên cứu tiếp)"
+    "related": "Tìm kiếm liên quan (bấm để nghiên cứu tiếp)",
+    "done": "Đã nghiên cứu xong"
   },
   "projects": {
     "title": "Dự án",
@@ -328,7 +334,8 @@
       "headline": "Tiêu đề",
       "author": "Tác giả",
       "datePublished": "Ngày đăng (YYYY-MM-DD)"
-    }
+    },
+    "generated": "Đã tạo schema"
   },
   "rankings": {
     "title": "Thứ hạng",
@@ -371,5 +378,50 @@
     "all": "Tất cả quốc gia",
     "empty": "Không tìm thấy",
     "addMarket": "+ Thêm thị trường"
+  },
+  "usage": {
+    "title": "Chi phí",
+    "subtitle": "Chi phí Claude API và Bright Data trong tháng này, so với ngân sách",
+    "provider": {
+      "claude": "Claude API",
+      "brightdata": "Bright Data"
+    },
+    "state": {
+      "success": "Trong ngân sách",
+      "warning": "Sắp hết",
+      "danger": "Đã hết"
+    },
+    "ofBudget": "trên ngân sách {budget}/tháng",
+    "balances": "Số dư tài khoản",
+    "unavailable": "Không lấy được",
+    "pending": "Đang chờ tính phí",
+    "openConsole": "Xem trên Claude Console",
+    "balanceNote": "Số dư Claude chỉ xem được trên Claude Console; ứng dụng không giữ key quản trị.",
+    "byFeature": "Theo chức năng",
+    "byUser": "Theo nhân viên",
+    "feature": "Chức năng",
+    "staff": "Nhân viên",
+    "total": "Tổng",
+    "features": {
+      "research": "Nghiên cứu từ khóa",
+      "audit": "Audit SEO",
+      "schema": "Schema từ URL",
+      "rankings": "Kiểm tra thứ hạng",
+      "cluster": "AI gom cụm"
+    },
+    "budgets": "Ngân sách tháng",
+    "budgetsDesc": "Đạt 80% hiện cảnh báo; đạt 100% tạm khóa chức năng tốn phí của dịch vụ đó",
+    "claudeBudget": "Claude API (USD/tháng)",
+    "bdBudget": "Bright Data (USD/tháng)",
+    "budgetHint": "Ngân sách tính lại từ ngày 1 hằng tháng. Đặt 0 để khóa hẳn dịch vụ.",
+    "save": "Lưu ngân sách",
+    "saved": "Đã lưu ngân sách",
+    "recent": "Hoạt động gần đây",
+    "empty": "Chưa có chi phí nào trong tháng này",
+    "tokens": "{model} · {input} token vào, {output} token ra",
+    "requests": "{count} request",
+    "estimateNote": "Chi phí Claude được tính từ số token và bảng giá công bố, có thể lệch nhỏ so với hóa đơn. Bright Data tính $1.50 / 1.000 request thành công.",
+    "notReady": "Chưa bật theo dõi chi phí",
+    "notReadyDesc": "Chạy file supabase/migrations/0004_usage_and_budgets.sql trong Supabase SQL Editor rồi tải lại trang."
   }
 }

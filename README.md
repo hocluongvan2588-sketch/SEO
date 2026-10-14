@@ -15,6 +15,7 @@
 | **Schema B2B** | Form mẫu (Organization, LocalBusiness, Service, Product, FAQPage, BreadcrumbList, Article) với xem trước trực tiếp, hoặc **AI tạo JSON-LD từ URL**; thư viện schema, sao chép 1 chạm |
 | **Thứ hạng** | Kiểm tra vị trí domain trong Top 30 Google **theo từng quốc gia** (proxy đặt tại nước đó), lịch sử, thay đổi, biểu đồ xu hướng |
 | **Dự án** | Nhiều website; mỗi dự án có ngôn ngữ chính, ~40 ngôn ngữ nội dung và **nhiều thị trường quốc tế** (toàn bộ quốc gia Google hỗ trợ) |
+| **Chi phí** (Quản trị) | Chi phí Claude API và Bright Data trong tháng theo chức năng và nhân viên, số dư Bright Data, ngân sách tháng (mặc định $20 Claude, $10 Bright Data): đạt 80% hiện cảnh báo, đạt 100% tạm khóa chức năng tốn phí |
 | **Cài đặt** | Hồ sơ, trạng thái tích hợp, phân quyền nhân viên (Quản trị / Biên tập / Chỉ xem) |
 
 Tối ưu cho nhân viên: giao diện tiếng Việt/English, chế độ sáng/tối, `Ctrl + K` mở thao tác nhanh, chọn dự án một lần cho mọi trang, thao tác hàng loạt, xuất CSV, responsive trên mobile.
@@ -23,7 +24,7 @@ Tối ưu cho nhân viên: giao diện tiếng Việt/English, chế độ sáng
 
 ### 1. Supabase
 1. Tạo project trên [supabase.com](https://supabase.com).
-2. Chạy migration **theo thứ tự**: dán lần lượt `0001_init.sql` → `0002_international_and_profiles.sql` → `0003_grants.sql` (trong `supabase/migrations/`) vào **SQL Editor**, hoặc `supabase db push` nếu dùng Supabase CLI.
+2. Chạy migration **theo thứ tự**: dán lần lượt `0001_init.sql` → `0002_international_and_profiles.sql` → `0003_grants.sql` → `0004_usage_and_budgets.sql` (trong `supabase/migrations/`) vào **SQL Editor**, hoặc `supabase db push` nếu dùng Supabase CLI.
 3. **Authentication → Providers → Email**: bật Email. Với hệ thống nội bộ nên **tắt "Allow new users to sign up"** và mời nhân viên qua **Authentication → Users → Invite**.
 4. **Authentication → URL Configuration**: thêm `https://<domain-app>/auth/callback` vào Redirect URLs.
 5. Người đăng nhập đầu tiên tự động là **Quản trị**; những người sau là **Biên tập**, admin đổi quyền trong *Cài đặt*.

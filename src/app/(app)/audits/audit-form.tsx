@@ -7,10 +7,12 @@ import { Globe, Loader2, ScanSearch } from "lucide-react";
 import { toast } from "sonner";
 import { runAudit } from "@/app/actions/audits";
 import { Button, Card, Input } from "@/components/ui";
+import { useCostLabel } from "@/components/use-cost";
 
 export function AuditForm({ projectId, domain, canWrite }: { projectId: string; domain: string; canWrite: boolean }) {
   const t = useTranslations("audits");
   const router = useRouter();
+  const costLabel = useCostLabel();
   const [url, setUrl] = useState(`https://${domain}/`);
   const [withAi, setWithAi] = useState(true);
   const [pending, start] = useTransition();
@@ -24,7 +26,7 @@ export function AuditForm({ projectId, domain, canWrite }: { projectId: string; 
           start(async () => {
             const res = await runAudit({ projectId, url, withAi });
             if (!res.ok) return void toast.error(t("failed"), { description: res.error });
-            toast.success(t("done"));
+            toast.success(t("done"), { description: costLabel(res.data.costUsd) });
             router.push(`/audits/${res.data.id}`);
           });
         }}

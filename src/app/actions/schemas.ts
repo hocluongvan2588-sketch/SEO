@@ -5,6 +5,7 @@ import { schemaFromPage } from "@/lib/ai";
 import { extractText } from "@/lib/audit";
 import { fetchPage } from "@/lib/brightdata";
 import { fail, type ActionResult } from "@/lib/context";
+import { metered } from "@/lib/usage";
 import { staffLocale } from "@/lib/staff-locale";
 import { getSession } from "@/lib/supabase/server";
 import { normalizeUrl } from "@/lib/utils";
@@ -45,16 +46,22 @@ export async function generateSchemaFromUrl(input: {
   projectId: string;
   url: string;
   locale: string;
-}): Promise<ActionResult<{ schemaType: string; name: string; jsonLd: Record<string, unknown>; notes: string }>> {
+}): Promise<ActionResult<{ schemaType: string; name: string; jsonLd: Record<string, unknown>; notes: string; costUsd: number }>> {
   try {
     const session = await getSession();
     if (!session) throw new Error("Unauthorized");
     const { data: project, error } = await session.supabase.from("projects").select("*").eq("id", input.projectId).single();
     if (error) throw error;
     const url = normalizeUrl(input.url);
-    const { html } = await fetchPage(url);
-    const out = await schemaFromPage({ url, locale: input.locale, project, pageText: extractText(html), staffLocale: await staffLocale() });
-    return { ok: true, data: { schemaType: out.schema_type, name: out.name, jsonLd: out.json_ld, notes: out.notes } };
+    const lang = await staffLocale();
+    const { result: out, costUsd } = await metered(
+      { supabase: session.supabase, userId: session.user.id, projectId: project.id, feature: "schema", providers: ["brightdata", "claude"] },
+      async () => {
+        const { html } = await fetchPage(url);
+        return schemaFromPage({ url, locale: input.locale, project, pageText: extractText(html), staffLocale: lang });
+      },
+    );
+    return { ok: true, data: { schemaType: out.schema_type, name: out.name, jsonLd: out.json_ld, notes: out.notes, costUsd } };
   } catch (e) {
     return fail(e);
   }

@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { SerpResult } from "./brightdata";
 import type { AuditCheck, Project } from "./types";
 import { countryName, languageName } from "./locales";
+import { recordClaude } from "./usage";
 
 const localeLabel = (code: string) => languageName(code, "en");
 
@@ -34,6 +35,12 @@ async function structured<T extends z.ZodType>(
     system: SYSTEM,
     output_config: { effort, format: betaZodOutputFormat(schema) },
     messages: [{ role: "user", content: prompt }],
+  });
+  recordClaude({
+    model: response.model,
+    input: response.usage.input_tokens + (response.usage.cache_creation_input_tokens ?? 0),
+    output: response.usage.output_tokens,
+    cacheRead: response.usage.cache_read_input_tokens ?? 0,
   });
   if (response.stop_reason === "refusal") throw new Error("Claude đã từ chối yêu cầu này");
   if (!response.parsed_output) throw new Error(`Claude không trả về kết quả hợp lệ (${response.stop_reason})`);

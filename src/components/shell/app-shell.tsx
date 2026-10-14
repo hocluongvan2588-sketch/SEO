@@ -18,10 +18,12 @@ interface ShellProps {
   activeProjectId: string | null;
   profileMissing?: boolean;
   userId?: string;
+  /** Tỉ lệ đã dùng ngân sách tháng (1 = 100%) */
+  budget?: { claude: number; brightdata: number } | null;
   children: React.ReactNode;
 }
 
-export function AppShell({ user, projects, activeProjectId, profileMissing, userId, children }: ShellProps) {
+export function AppShell({ user, projects, activeProjectId, profileMissing, userId, budget, children }: ShellProps) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -57,7 +59,7 @@ export function AppShell({ user, projects, activeProjectId, profileMissing, user
       </div>
 
       <nav className="flex-1 space-y-0.5 px-3">
-        {NAV.map((item) => {
+        {NAV.filter((item) => !item.adminOnly || user.role === "admin").map((item) => {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           const Icon = item.icon;
           return (
@@ -146,11 +148,12 @@ export function AppShell({ user, projects, activeProjectId, profileMissing, user
               </div>
             </div>
           )}
+          <BudgetBanner budget={budget} isAdmin={user.role === "admin"} />
           {children}
         </main>
       </div>
 
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} projects={projects} />
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} projects={projects} isAdmin={user.role === "admin"} />
     </div>
   );
 }
@@ -258,5 +261,43 @@ function ThemeToggle() {
     >
       {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </button>
+  );
+}
+
+/** Cảnh báo khi đã dùng ≥ 80% ngân sách tháng; ≥ 100% thì các chức năng tốn phí bị tạm khóa */
+function BudgetBanner({ budget, isAdmin }: { budget?: { claude: number; brightdata: number } | null; isAdmin: boolean }) {
+  const t = useTranslations("nav");
+  if (!budget) return null;
+  const items = (["claude", "brightdata"] as const)
+    .map((k) => ({ k, ratio: budget[k] }))
+    .filter((x) => x.ratio >= 0.8);
+  if (!items.length) return null;
+  const over = items.some((x) => x.ratio >= 1);
+  return (
+    <div
+      className={cn(
+        "mb-6 flex flex-col gap-2 rounded-xl border px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between",
+        over ? "border-danger/40 bg-danger-soft" : "border-warning/40 bg-warning-soft",
+      )}
+    >
+      <div className="flex gap-3">
+        <AlertTriangle className={cn("mt-0.5 h-4 w-4 shrink-0", over ? "text-danger" : "text-warning")} />
+        <div className="text-text">
+          {items.map((x) => (
+            <div key={x.k}>
+              {t(x.ratio >= 1 ? "budgetOver" : "budgetNear", {
+                provider: x.k === "claude" ? "Claude API" : "Bright Data",
+                pct: Math.round(x.ratio * 100),
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+      {isAdmin && (
+        <Link href="/usage" className="shrink-0 font-medium text-primary hover:underline">
+          {t("budgetManage")}
+        </Link>
+      )}
+    </div>
   );
 }

@@ -18,6 +18,7 @@ import { Button, Card, EmptyState, Field, Input, Select, Textarea } from "@/comp
 import { Modal } from "@/components/ui/modal";
 import { countryName, flag, languageName } from "@/lib/locales";
 import { CountrySelect } from "@/components/ui/country-picker";
+import { useCostLabel } from "@/components/use-cost";
 import type { Keyword, KeywordStatus, Project } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +37,7 @@ export function KeywordTable({
 }) {
   const t = useTranslations("keywords");
   const ui = useLocale();
+  const costLabel = useCostLabel();
   const router = useRouter();
   const [q, setQ] = useState("");
   const [market, setMarket] = useState("");
@@ -230,7 +232,7 @@ export function KeywordTable({
                 "rank",
                 async () => {
                   const r = await checkRankings(project.id, ids);
-                  if (r.ok) toast.info(t("rankResult", { checked: r.data.checked, found: r.data.found }));
+                  if (r.ok) toast.info(t("rankResult", { checked: r.data.checked, found: r.data.found }), { description: costLabel(r.data.costUsd) });
                   return r;
                 },
                 t("rankDone"),

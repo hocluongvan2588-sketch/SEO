@@ -11,6 +11,7 @@ import { languageName } from "@/lib/locales";
 import { buildJsonLd, SCHEMA_TEMPLATES, type SchemaInput } from "@/lib/schema-templates";
 import type { Project, SchemaRecord } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useCostLabel } from "@/components/use-cost";
 
 type Pair = { a: string; b: string };
 
@@ -18,6 +19,7 @@ export function SchemaStudio({ project, saved, canWrite }: { project: Project; s
   const t = useTranslations("schemas");
   const tf = useTranslations("schemas.fields");
   const ui = useLocale();
+  const costLabel = useCostLabel();
   const format = useFormatter();
   const router = useRouter();
   const [mode, setMode] = useState<"template" | "ai">("template");
@@ -159,6 +161,8 @@ export function SchemaStudio({ project, saved, canWrite }: { project: Project; s
                       if (!res.ok) return void toast.error(t("failed"), { description: res.error });
                       setAiResult(res.data);
                       setName(res.data.name);
+                      const cost = costLabel(res.data.costUsd);
+                      if (cost) toast.success(t("generated"), { description: cost });
                     })
                   }
                 >

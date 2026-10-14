@@ -7,10 +7,12 @@ import { RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteAudit, runAudit } from "@/app/actions/audits";
 import { Button } from "@/components/ui";
+import { useCostLabel } from "@/components/use-cost";
 
 export function RerunButton({ projectId, url }: { projectId: string; url: string }) {
   const t = useTranslations("audits");
   const router = useRouter();
+  const costLabel = useCostLabel();
   const [pending, start] = useTransition();
   return (
     <Button
@@ -20,6 +22,7 @@ export function RerunButton({ projectId, url }: { projectId: string; url: string
         start(async () => {
           const res = await runAudit({ projectId, url, withAi: true });
           if (!res.ok) return void toast.error(res.error);
+          toast.success(t("done"), { description: costLabel(res.data.costUsd) });
           router.push(`/audits/${res.data.id}`);
         })
       }
