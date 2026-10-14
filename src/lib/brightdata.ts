@@ -1,4 +1,5 @@
 import "server-only";
+import * as cheerio from "cheerio";
 import { recordBrightData } from "./usage";
 
 const ENDPOINT = "https://api.brightdata.com/request";
@@ -17,34 +18,46 @@ function config() {
 
 const RETRYABLE = new Set([408, 429, 500, 502, 503, 504]);
 
+interface RequestOptions {
+  /** Đặt proxy tại quốc gia này (mã 2 chữ cái) */
+  country?: string;
+  /** Tham số thêm cho API, ví dụ { format: "json", data_format: "parsed" } */
+  extra?: Record<string, unknown>;
+  attempts?: number;
+}
+
 /**
- * Gọi API Bright Data, tự thử lại tối đa 3 lần khi bị timeout / quá tải
+ * Gọi API Bright Data, tự thử lại khi bị timeout / quá tải / trả về rỗng
  * (zone mới tạo hoặc Google phản hồi chậm thường gây lỗi tạm thời).
+ * Lý do lỗi Bright Data gửi trong header `x-brd-error` được đưa vào thông báo.
  */
-async function request(zone: string, url: string, country?: string): Promise<{ body: string; status: number }> {
+async function request(zone: string, url: string, opts: RequestOptions = {}): Promise<{ body: string; status: number }> {
   const { apiKey } = config();
+  const attempts = opts.attempts ?? 3;
   let lastError = "";
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
       const res = await fetch(ENDPOINT, {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ zone, url, format: "raw", ...(country ? { country } : {}) }),
+        body: JSON.stringify({ zone, url, format: "raw", ...(opts.country ? { country: opts.country } : {}), ...opts.extra }),
         cache: "no-store",
         signal: AbortSignal.timeout(60_000),
       });
       const body = await res.text();
       const timedOut = /^\s*timeout\s*$/i.test(body);
-      if (res.ok && !timedOut) {
+      const empty = !body.trim();
+      if (res.ok && !timedOut && !empty) {
         recordBrightData(1);
         return { body, status: res.status };
       }
-      lastError = `Bright Data ${res.status}: ${body.slice(0, 200)}`;
-      if (!RETRYABLE.has(res.status) && !timedOut) break;
+      const reason = res.headers.get("x-brd-error") ?? res.headers.get("x-luminati-error") ?? "";
+      lastError = `Bright Data ${res.status}: ${empty ? "phản hồi rỗng" : body.slice(0, 200)}${reason ? ` — ${reason}` : ""}`;
+      if (!RETRYABLE.has(res.status) && !timedOut && !empty) break;
     } catch (err) {
       lastError = err instanceof Error ? err.message : String(err);
     }
-    if (attempt < 3) await new Promise((r) => setTimeout(r, attempt * 2000));
+    if (attempt < attempts) await new Promise((r) => setTimeout(r, attempt * 2000));
   }
   throw new BrightDataError(`${lastError} (zone: ${zone})`);
 }
@@ -63,21 +76,79 @@ export interface SerpResult {
   related: string[];
 }
 
-/** Tìm kiếm Google qua SERP API của Bright Data, trả về JSON đã parse. */
+/**
+ * Đọc kết quả SERP từ phản hồi Bright Data. Chấp nhận:
+ * JSON đã parse, JSON bọc ngoài dạng { status_code, body }, hoặc HTML gốc của Google.
+ */
+function parseSerpBody(text: string): Record<string, unknown> | null {
+  const t = text.trim();
+  if (!t) return null;
+  if (t.startsWith("<")) return parseGoogleHtml(t);
+  let j: unknown;
+  try {
+    j = JSON.parse(t);
+  } catch {
+    return null;
+  }
+  const obj = j as Record<string, unknown>;
+  if (typeof obj.body === "string") return parseSerpBody(obj.body);
+  if (obj.body && typeof obj.body === "object") return obj.body as Record<string, unknown>;
+  return obj;
+}
+
+/** Dự phòng cuối: tự đọc kết quả tự nhiên từ HTML trang Google */
+function parseGoogleHtml(html: string): Record<string, unknown> | null {
+  const $ = cheerio.load(html);
+  const organic: { title: string; link: string; description?: string }[] = [];
+  $("a:has(h3)").each((_, el) => {
+    let href = $(el).attr("href") ?? "";
+    if (href.startsWith("/url?")) href = new URLSearchParams(href.slice(5)).get("q") ?? "";
+    if (!/^https?:\/\//.test(href) || /(^|\.)google\./.test(new URL(href).hostname)) return;
+    const block = $(el).closest("div.g, div[data-hveid], div.MjjYud");
+    organic.push({
+      title: $(el).find("h3").first().text().trim(),
+      link: href,
+      description: block.find("div.VwiC3b, span.aCOpRe, div[data-sncf]").first().text().trim() || undefined,
+    });
+  });
+  const related = $("a[href^='/search?'] div.s75CSd, div.y6Uyqe a, a.k8XOCe")
+    .map((_, el) => $(el).text().trim())
+    .get()
+    .filter(Boolean);
+  return organic.length ? { organic, related, people_also_ask: [] } : null;
+}
+
+/** Tìm kiếm Google qua SERP API của Bright Data, trả về kết quả đã parse. */
 export async function googleSearch(
   query: string,
   opts: { hl: string; gl: string; start?: number },
 ): Promise<SerpResult> {
   const { serpZone } = config();
-  const params = new URLSearchParams({ q: query, hl: opts.hl, gl: opts.gl, brd_json: "1" });
+  const params = new URLSearchParams({ q: query, hl: opts.hl, gl: opts.gl });
   if (opts.start) params.set("start", String(opts.start));
-  // Đi qua proxy đặt tại chính quốc gia mục tiêu để kết quả giống người dùng ở đó
-  const { body } = await request(serpZone, `https://www.google.com/search?${params}`, opts.gl);
-  let data: Record<string, unknown>;
-  try {
-    data = JSON.parse(body);
-  } catch {
-    throw new BrightDataError(`Bright Data không trả về JSON (kiểm tra zone ${serpZone} là loại SERP API): ${body.slice(0, 120)}`);
+  const base = `https://www.google.com/search?${params}`;
+
+  // Thử lần lượt: (1) JSON qua brd_json + proxy tại nước mục tiêu,
+  // (2) định dạng parsed như Bright Data gợi ý cho zone, (3) HTML gốc rồi tự đọc.
+  const stages: { url: string; opts: RequestOptions }[] = [
+    { url: `${base}&brd_json=1`, opts: { country: opts.gl, attempts: 2 } },
+    { url: base, opts: { extra: { format: "json", data_format: "parsed" }, attempts: 1 } },
+    { url: base, opts: { attempts: 1 } },
+  ];
+  let data: Record<string, unknown> | null = null;
+  const problems: string[] = [];
+  for (const stage of stages) {
+    try {
+      const { body } = await request(serpZone, stage.url, stage.opts);
+      data = parseSerpBody(body);
+      if (data) break;
+      problems.push(`không đọc được kết quả: ${body.slice(0, 80)}`);
+    } catch (err) {
+      problems.push(err instanceof Error ? err.message : String(err));
+    }
+  }
+  if (!data) {
+    throw new BrightDataError(`Không lấy được kết quả Google từ zone ${serpZone}. ${problems.at(-1) ?? ""}`);
   }
 
   const organic = Array.isArray(data.organic) ? (data.organic as Record<string, unknown>[]) : [];
