@@ -358,6 +358,12 @@ export async function scrapeLinkedInProfiles(urls: string[]): Promise<LinkedInPr
     records = parseRecords(await res.text());
   } else {
     const body = await res.text().catch(() => "");
+    if (/customer is not active/i.test(body)) {
+      throw new BrightDataError(
+        "Tài khoản Bright Data chưa được kích hoạt cho Web Scraper API (scraper LinkedIn). " +
+          "Vào Bright Data → Billing để thêm phương thức thanh toán / nạp tiền hoặc hoàn tất xác minh tài khoản, rồi thử lại.",
+      );
+    }
     throw new BrightDataError(`Bright Data ${res.status}: ${body.slice(0, 200)} (dataset: ${LINKEDIN_PROFILE_DATASET})`);
   }
 
