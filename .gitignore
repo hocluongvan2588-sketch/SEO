@@ -1,0 +1,9 @@
+# Secrets
+.env
+.env*.local
+.claude/settings.local.json
+
+# Next.js
+node_modules/
+.next/
+out/
