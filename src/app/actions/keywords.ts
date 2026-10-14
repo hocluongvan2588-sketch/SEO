@@ -1,0 +1,234 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { analyzeKeywords, clusterKeywords, type KeywordAnalysis } from "@/lib/ai";
+import { findRank, googleSearch, type SerpResult } from "@/lib/brightdata";
+import { fail, type ActionResult } from "@/lib/context";
+import { staffLocale } from "@/lib/staff-locale";
+import { getSession } from "@/lib/supabase/server";
+import type { KeywordStatus, Priority, Project } from "@/lib/types";
+import { CONTENT_LOCALES } from "@/lib/locales";
+
+async function loadProject(projectId: string) {
+  const session = await getSession();
+  if (!session) throw new Error("Unauthorized");
+  const { data, error } = await session.supabase.from("projects").select("*").eq("id", projectId).single();
+  if (error) throw error;
+  return { session, project: data as Project };
+}
+
+export interface ResearchResult {
+  researchId: string;
+  serp: SerpResult;
+  ai: KeywordAnalysis;
+}
+
+/** Lấy SERP thật qua Bright Data → Claude phân tích → lưu lịch sử nghiên cứu. */
+export async function runKeywordResearch(input: {
+  projectId: string;
+  seed: string;
+  locale: string;
+  country: string;
+}): Promise<ActionResult<ResearchResult>> {
+  try {
+    const { session, project } = await loadProject(input.projectId);
+    const seed = input.seed.trim();
+    if (!seed) throw new Error("Seed keyword is required");
+    const serp = await googleSearch(seed, { hl: input.locale, gl: input.country });
+    const ai = await analyzeKeywords({ project, seed, locale: input.locale, serp, staffLocale: await staffLocale() });
+    const { data, error } = await session.supabase
+      .from("keyword_research")
+      .insert({
+        project_id: project.id,
+        seed,
+        locale: input.locale,
+        country: input.country,
+        serp,
+        ai,
+        created_by: session.user.id,
+      })
+      .select("id")
+      .single();
+    if (error) throw error;
+    return { ok: true, data: { researchId: data.id, serp, ai } };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function saveKeywords(input: {
+  projectId: string;
+  researchId: string | null;
+  locale: string;
+  keywords: KeywordAnalysis["keywords"];
+}): Promise<ActionResult<{ count: number }>> {
+  try {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized");
+    const rows = input.keywords.map((k) => ({
+      project_id: input.projectId,
+      research_id: input.researchId,
+      keyword: k.keyword.trim().toLowerCase(),
+      locale: input.locale,
+      intent: k.intent,
+      difficulty: k.difficulty,
+      priority: k.priority,
+      cluster: k.cluster,
+      content_type: k.content_type,
+      notes: k.rationale,
+    }));
+    const { error } = await session.supabase
+      .from("keywords")
+      .upsert(rows, { onConflict: "project_id,keyword,locale", ignoreDuplicates: true });
+    if (error) throw error;
+    revalidatePath("/keywords");
+    return { ok: true, data: { count: rows.length } };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function addKeywordsManually(input: {
+  projectId: string;
+  locale: string;
+  keywords: string[];
+}): Promise<ActionResult<{ count: number }>> {
+  try {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized");
+    const rows = Array.from(new Set(input.keywords.map((k) => k.trim().toLowerCase()).filter(Boolean))).map((keyword) => ({
+      project_id: input.projectId,
+      keyword,
+      locale: input.locale,
+    }));
+    const { error } = await session.supabase
+      .from("keywords")
+      .upsert(rows, { onConflict: "project_id,keyword,locale", ignoreDuplicates: true });
+    if (error) throw error;
+    revalidatePath("/keywords");
+    return { ok: true, data: { count: rows.length } };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function updateKeyword(
+  id: string,
+  patch: Partial<{ status: KeywordStatus; priority: Priority; target_url: string | null; cluster: string | null; notes: string | null }>,
+): Promise<ActionResult> {
+  try {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized");
+    const { error } = await session.supabase.from("keywords").update(patch).eq("id", id);
+    if (error) throw error;
+    revalidatePath("/keywords");
+    return { ok: true, data: undefined };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function bulkUpdateKeywords(ids: string[], patch: { status?: KeywordStatus; priority?: Priority }): Promise<ActionResult> {
+  try {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized");
+    const { error } = await session.supabase.from("keywords").update(patch).in("id", ids);
+    if (error) throw error;
+    revalidatePath("/keywords");
+    return { ok: true, data: undefined };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function deleteKeywords(ids: string[]): Promise<ActionResult> {
+  try {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized");
+    const { error } = await session.supabase.from("keywords").delete().in("id", ids);
+    if (error) throw error;
+    revalidatePath("/keywords");
+    return { ok: true, data: undefined };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Claude gom cụm toàn bộ từ khóa (hoặc từ khóa được chọn) của dự án. */
+export async function clusterProjectKeywords(projectId: string, ids?: string[]): Promise<ActionResult<{ clusters: number }>> {
+  try {
+    const { session, project } = await loadProject(projectId);
+    let q = session.supabase.from("keywords").select("id, keyword").eq("project_id", projectId);
+    if (ids?.length) q = q.in("id", ids);
+    const { data: rows, error } = await q.limit(400);
+    if (error) throw error;
+    if (!rows?.length) throw new Error("No keywords to cluster");
+    const result = await clusterKeywords({ project, keywords: rows.map((r) => r.keyword), staffLocale: await staffLocale() });
+    const byKeyword = new Map(rows.map((r) => [r.keyword.toLowerCase(), r.id]));
+    await Promise.all(
+      result.clusters.flatMap((c) =>
+        c.keywords
+          .map((k) => byKeyword.get(k.trim().toLowerCase()))
+          .filter((id): id is string => Boolean(id))
+          .map((id) => session.supabase.from("keywords").update({ cluster: c.name }).eq("id", id)),
+      ),
+    );
+    revalidatePath("/keywords");
+    return { ok: true, data: { clusters: result.clusters.length } };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Kiểm tra thứ hạng Google (top 30) cho các từ khóa được chọn. */
+export async function checkRankings(projectId: string, ids: string[]): Promise<ActionResult<{ checked: number; found: number }>> {
+  try {
+    const { session, project } = await loadProject(projectId);
+    const { data: rows, error } = await session.supabase
+      .from("keywords")
+      .select("id, keyword, locale, best_position")
+      .in("id", ids.slice(0, 25));
+    if (error) throw error;
+    let found = 0;
+    for (const row of rows ?? []) {
+      const gl =
+        row.locale === project.default_locale
+          ? project.country
+          : (CONTENT_LOCALES.find((l) => l.code === row.locale)?.country ?? project.country);
+      const { position, url } = await findRank(row.keyword, project.domain, { hl: row.locale, gl });
+      if (position) found++;
+      const now = new Date().toISOString();
+      await session.supabase.from("rank_checks").insert({ keyword_id: row.id, position, url, checked_at: now });
+      await session.supabase
+        .from("keywords")
+        .update({
+          current_position: position,
+          best_position:
+            position && (!row.best_position || position < row.best_position) ? position : row.best_position,
+          target_url: url ?? undefined,
+          last_checked_at: now,
+        })
+        .eq("id", row.id);
+    }
+    revalidatePath("/keywords");
+    revalidatePath("/rankings");
+    return { ok: true, data: { checked: rows?.length ?? 0, found } };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function getResearch(id: string): Promise<ActionResult<ResearchResult & { seed: string; locale: string; country: string }>> {
+  try {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized");
+    const { data, error } = await session.supabase.from("keyword_research").select("*").eq("id", id).single();
+    if (error) throw error;
+    return {
+      ok: true,
+      data: { researchId: data.id, serp: data.serp, ai: data.ai, seed: data.seed, locale: data.locale, country: data.country },
+    };
+  } catch (e) {
+    return fail(e);
+  }
+}

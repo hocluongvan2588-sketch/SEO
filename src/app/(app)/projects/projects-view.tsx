@@ -1,0 +1,241 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { CheckCircle2, FolderKanban, Globe2, Pencil, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { deleteProject, saveProject, type ProjectInput } from "@/app/actions/projects";
+import { setActiveProject } from "@/app/actions/preferences";
+import { Badge, Button, Card, EmptyState, Field, Input, Select, Textarea } from "@/components/ui";
+import { Modal } from "@/components/ui/modal";
+import { CONTENT_LOCALES, COUNTRIES, localeLabel } from "@/lib/locales";
+import type { Project } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+export function ProjectsView({
+  projects,
+  activeId,
+  openNew,
+  canWrite,
+  isAdmin,
+}: {
+  projects: Project[];
+  activeId: string | null;
+  openNew: boolean;
+  canWrite: boolean;
+  isAdmin: boolean;
+}) {
+  const t = useTranslations("projects");
+  const router = useRouter();
+  const [editing, setEditing] = useState<Project | "new" | null>(openNew ? "new" : null);
+  const [, start] = useTransition();
+
+  return (
+    <>
+      {canWrite && (
+        <div className="mb-4 flex justify-end">
+          <Button onClick={() => setEditing("new")}>
+            <Plus className="h-4 w-4" />
+            {t("new")}
+          </Button>
+        </div>
+      )}
+
+      {projects.length === 0 ? (
+        <Card>
+          <EmptyState icon={<FolderKanban className="h-5 w-5" />} title={t("empty")} description={t("emptyDesc")} />
+        </Card>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {projects.map((p) => (
+            <Card key={p.id} className={cn("flex flex-col p-5", p.id === activeId && "border-primary ring-2 ring-primary/15")}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h3 className="truncate font-semibold text-text">{p.name}</h3>
+                  <a href={`https://${p.domain}`} target="_blank" rel="noreferrer" className="text-sm text-primary hover:underline">
+                    {p.domain}
+                  </a>
+                </div>
+                {p.id === activeId && (
+                  <Badge tone="primary">
+                    <CheckCircle2 className="h-3 w-3" />
+                    {t("active")}
+                  </Badge>
+                )}
+              </div>
+              {p.description && <p className="mt-2 line-clamp-2 text-sm text-muted">{p.description}</p>}
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                <Badge>
+                  <Globe2 className="h-3 w-3" />
+                  {p.country.toUpperCase()}
+                </Badge>
+                {p.locales.map((l) => (
+                  <Badge key={l} tone={l === p.default_locale ? "info" : "neutral"}>
+                    {localeLabel(l)}
+                  </Badge>
+                ))}
+                {p.industry && <Badge>{p.industry}</Badge>}
+              </div>
+              <div className="mt-auto flex gap-2 pt-4">
+                {p.id !== activeId && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() =>
+                      start(async () => {
+                        await setActiveProject(p.id);
+                        router.refresh();
+                        toast.success(t("switched", { name: p.name }));
+                      })
+                    }
+                  >
+                    {t("select")}
+                  </Button>
+                )}
+                {canWrite && (
+                  <Button size="sm" variant="ghost" onClick={() => setEditing(p)}>
+                    <Pencil className="h-3.5 w-3.5" />
+                    {t("edit")}
+                  </Button>
+                )}
+                {isAdmin && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="ml-auto text-danger hover:text-danger"
+                    onClick={() => {
+                      if (!confirm(t("confirmDelete", { name: p.name }))) return;
+                      start(async () => {
+                        const res = await deleteProject(p.id);
+                        if (!res.ok) toast.error(res.error);
+                        else router.refresh();
+                      });
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Modal open={editing !== null} onClose={() => setEditing(null)} title={editing === "new" ? t("new") : t("edit")}>
+        {editing !== null && (
+          <ProjectForm
+            project={editing === "new" ? null : editing}
+            onDone={() => {
+              setEditing(null);
+              router.replace("/projects");
+              router.refresh();
+            }}
+          />
+        )}
+      </Modal>
+    </>
+  );
+}
+
+function ProjectForm({ project, onDone }: { project: Project | null; onDone: () => void }) {
+  const t = useTranslations("projects");
+  const [pending, start] = useTransition();
+  const [form, setForm] = useState<ProjectInput>({
+    name: project?.name ?? "",
+    domain: project?.domain ?? "",
+    description: project?.description ?? "",
+    industry: project?.industry ?? "",
+    default_locale: project?.default_locale ?? "vi",
+    locales: project?.locales ?? ["vi"],
+    country: project?.country ?? "vn",
+  });
+  const set = <K extends keyof ProjectInput>(k: K, v: ProjectInput[K]) => setForm((f) => ({ ...f, [k]: v }));
+
+  const toggleLocale = (code: string) => {
+    if (code === form.default_locale) return;
+    set("locales", form.locales.includes(code) ? form.locales.filter((l) => l !== code) : [...form.locales, code]);
+  };
+
+  return (
+    <form
+      className="space-y-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        start(async () => {
+          const res = await saveProject(form, project?.id);
+          if (!res.ok) return void toast.error(res.error);
+          toast.success(t("saved"));
+          onDone();
+        });
+      }}
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label={t("name")}>
+          <Input required value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Công ty ABC" />
+        </Field>
+        <Field label={t("domain")}>
+          <Input required value={form.domain} onChange={(e) => set("domain", e.target.value)} placeholder="abc.com.vn" />
+        </Field>
+      </div>
+      <Field label={t("industry")}>
+        <Input value={form.industry} onChange={(e) => set("industry", e.target.value)} placeholder={t("industryPh")} />
+      </Field>
+      <Field label={t("description")} hint={t("descriptionHint")}>
+        <Textarea value={form.description} onChange={(e) => set("description", e.target.value)} />
+      </Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label={t("defaultLocale")}>
+          <Select
+            value={form.default_locale}
+            onChange={(e) => {
+              const v = e.target.value;
+              setForm((f) => ({ ...f, default_locale: v, locales: Array.from(new Set([v, ...f.locales])) }));
+            }}
+          >
+            {CONTENT_LOCALES.map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label={t("country")}>
+          <Select value={form.country} onChange={(e) => set("country", e.target.value)}>
+            {COUNTRIES.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      </div>
+      <Field label={t("locales")} hint={t("localesHint")}>
+        <div className="flex flex-wrap gap-2">
+          {CONTENT_LOCALES.map((l) => {
+            const on = form.locales.includes(l.code);
+            return (
+              <button
+                type="button"
+                key={l.code}
+                onClick={() => toggleLocale(l.code)}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-sm transition-colors",
+                  on ? "border-primary bg-primary-soft text-primary" : "border-border text-muted hover:bg-surface-2",
+                  l.code === form.default_locale && "cursor-default",
+                )}
+              >
+                {l.label}
+              </button>
+            );
+          })}
+        </div>
+      </Field>
+      <div className="flex justify-end gap-2 pt-2">
+        <Button type="submit" loading={pending}>
+          {t("save")}
+        </Button>
+      </div>
+    </form>
+  );
+}
