@@ -1,6 +1,6 @@
 {
   "nav": {
-    "tagline": "Internal SEO platform",
+    "tagline": "SEO & global markets",
     "dashboard": "Dashboard",
     "keywords": "Keywords",
     "audits": "SEO audit",
@@ -44,7 +44,7 @@
     "cost": "Estimated cost: {cost}"
   },
   "login": {
-    "title": "Sign in to SEO Hub",
+    "title": "Sign in to {name}",
     "subtitle": "For internal staff",
     "email": "Work email",
     "password": "Password",

@@ -1,6 +1,6 @@
 {
   "nav": {
-    "tagline": "Nền tảng SEO nội bộ",
+    "tagline": "SEO & thị trường quốc tế",
     "dashboard": "Tổng quan",
     "keywords": "Từ khóa",
     "audits": "Audit SEO",
@@ -44,7 +44,7 @@
     "cost": "Chi phí ước tính: {cost}"
   },
   "login": {
-    "title": "Đăng nhập SEO Hub",
+    "title": "Đăng nhập {name}",
     "subtitle": "Dành cho nhân viên nội bộ",
     "email": "Email công ty",
     "password": "Mật khẩu",

@@ -3,7 +3,9 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Mail, Sparkles } from "lucide-react";
+import { Mail } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
+import { BRAND } from "@/lib/brand";
 import { toast } from "sonner";
 import { sendMagicLink, signInWithPassword } from "@/app/actions/auth";
 import { Button, Card, Field, Input } from "@/components/ui";
@@ -37,10 +39,8 @@ export function LoginForm({ next, error }: { next?: string; error?: string }) {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary-soft via-bg to-bg px-4">
       <Card className="w-full max-w-sm p-8">
         <div className="mb-6 flex flex-col items-center text-center">
-          <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-fg">
-            <Sparkles className="h-5 w-5" />
-          </div>
-          <h1 className="text-xl font-semibold text-text">{t("title")}</h1>
+          <BrandMark size={56} className="mb-3 rounded-xl" />
+          <h1 className="text-xl font-semibold text-text">{t("title", { name: BRAND.name })}</h1>
           <p className="mt-1 text-sm text-muted">{t("subtitle")}</p>
         </div>
 

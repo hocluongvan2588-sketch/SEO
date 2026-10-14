@@ -3,10 +3,11 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale } from "next-intl/server";
 import { Toaster } from "sonner";
 import "./globals.css";
+import { BRAND } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: "SEO Hub",
-  description: "Internal SEO platform",
+  title: { default: BRAND.name, template: `%s · ${BRAND.name}` },
+  description: "Vexim — nền tảng SEO & thị trường quốc tế nội bộ",
   robots: { index: false, follow: false },
 };
 

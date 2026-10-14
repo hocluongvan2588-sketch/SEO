@@ -4,10 +4,12 @@ import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { AlertTriangle, Check, ChevronsUpDown, Command, Globe, LogOut, Menu, Moon, Plus, Sparkles, Sun, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronsUpDown, Command, Globe, LogOut, Menu, Moon, Plus, Sun, X } from "lucide-react";
 import { setActiveProject, setUiLocale } from "@/app/actions/preferences";
 import { signOut } from "@/app/actions/auth";
+import { BrandMark } from "@/components/brand-mark";
 import { Kbd } from "@/components/ui";
+import { BRAND } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 import { NAV } from "./nav";
 import { CommandPalette } from "./command-palette";
@@ -45,11 +47,9 @@ export function AppShell({ user, projects, activeProjectId, profileMissing, user
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center gap-2.5 px-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-fg">
-          <Sparkles className="h-4 w-4" />
-        </div>
+        <BrandMark size={34} />
         <div className="leading-tight">
-          <div className="font-semibold text-text">SEO Hub</div>
+          <div className="font-semibold text-text">{BRAND.name}</div>
           <div className="text-[11px] text-muted">{t("tagline")}</div>
         </div>
       </div>

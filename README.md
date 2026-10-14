@@ -1,4 +1,4 @@
-# SEO Hub — Nền tảng SEO nội bộ cho doanh nghiệp
+# Vexim Growth — Nền tảng SEO & thị trường quốc tế nội bộ của Vexim
 
 Ứng dụng web nội bộ giúp nhân viên marketing nghiên cứu từ khóa, audit SEO, tạo Schema B2B và theo dõi thứ hạng Google cho nhiều website, nhiều ngôn ngữ.
 
