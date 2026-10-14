@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { List, Sparkles } from "lucide-react";
+import type { KeywordFilters } from "@/lib/keyword-filters";
 import type { Keyword, Project } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { KeywordTable } from "./keyword-table";
@@ -14,9 +15,16 @@ export function KeywordsView({
   history,
   initialTab,
   canWrite,
+  ...list
 }: {
   project: Project;
   keywords: Keyword[];
+  total: number;
+  matched: number;
+  page: number;
+  pageSize: number;
+  filters: KeywordFilters;
+  facets: { countries: string[]; clusters: string[] };
   history: { id: string; seed: string; locale: string; country: string; created_at: string }[];
   initialTab: "list" | "research";
   canWrite: boolean;
@@ -25,7 +33,7 @@ export function KeywordsView({
   const [tab, setTab] = useState(initialTab);
 
   const tabs = [
-    { id: "list" as const, label: t("tabList", { count: keywords.length }), icon: List },
+    { id: "list" as const, label: t("tabList", { count: list.total }), icon: List },
     { id: "research" as const, label: t("tabResearch"), icon: Sparkles },
   ];
 
@@ -48,7 +56,7 @@ export function KeywordsView({
       </div>
       {/* Giữ cả hai tab trong DOM để không mất kết quả nghiên cứu khi chuyển tab */}
       <div className={tab === "list" ? "" : "hidden"}>
-        <KeywordTable project={project} keywords={keywords} canWrite={canWrite} onResearch={() => setTab("research")} />
+        <KeywordTable project={project} keywords={keywords} {...list} canWrite={canWrite} onResearch={() => setTab("research")} />
       </div>
       <div className={tab === "research" ? "" : "hidden"}>
         <ResearchPanel project={project} history={history} canWrite={canWrite} onSaved={() => setTab("list")} />

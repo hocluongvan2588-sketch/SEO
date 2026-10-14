@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { BarChart3, Download, FilePenLine, Layers, Plus, Search, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -11,11 +11,14 @@ import {
   checkRankings,
   clusterProjectKeywords,
   deleteKeywords,
+  exportKeywords,
   markContentUpdated,
   updateKeyword,
 } from "@/app/actions/keywords";
 import { DifficultyBar, IntentBadge, PositionBadge, PriorityBadge } from "@/components/keyword-bits";
 import { Button, Card, EmptyState, Field, Input, Select, Textarea } from "@/components/ui";
+import { Pager } from "@/components/ui/pager";
+import type { KeywordFilters } from "@/lib/keyword-filters";
 import { Modal } from "@/components/ui/modal";
 import { countryName, flag, languageName } from "@/lib/locales";
 import { CountrySelect } from "@/components/ui/country-picker";
@@ -28,11 +31,26 @@ const STATUSES: KeywordStatus[] = ["new", "planned", "writing", "published", "ig
 export function KeywordTable({
   project,
   keywords,
+  total,
+  matched,
+  page,
+  pageSize,
+  filters,
+  facets,
   canWrite,
   onResearch,
 }: {
   project: Project;
+  /** Các dòng của trang hiện tại (đã lọc trong database) */
   keywords: Keyword[];
+  /** Tổng số từ khóa của dự án */
+  total: number;
+  /** Số từ khóa khớp bộ lọc */
+  matched: number;
+  page: number;
+  pageSize: number;
+  filters: KeywordFilters;
+  facets: { countries: string[]; clusters: string[] };
   canWrite: boolean;
   onResearch: () => void;
 }) {
@@ -40,34 +58,37 @@ export function KeywordTable({
   const ui = useLocale();
   const costLabel = useCostLabel();
   const router = useRouter();
-  const [q, setQ] = useState("");
-  const [market, setMarket] = useState("");
-  const [status, setStatus] = useState("");
-  const [locale, setLocale] = useState("");
-  const [priority, setPriority] = useState("");
-  const [cluster, setCluster] = useState("");
-  const [groupByCluster, setGroupByCluster] = useState(false);
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const [q, setQ] = useState(filters.q ?? "");
+  const { status = "", priority = "", market = "", locale = "", cluster = "" } = filters;
+  const groupByCluster = filters.group === "cluster";
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [, start] = useTransition();
 
-  const marketsInUse = useMemo(() => Array.from(new Set(keywords.map((k) => k.country).filter(Boolean))), [keywords]);
-  const clusters = useMemo(() => Array.from(new Set(keywords.map((k) => k.cluster).filter(Boolean))) as string[], [keywords]);
+  /** Đổi bộ lọc trên URL → server lọc lại; luôn về trang 1 */
+  const setFilter = (key: keyof KeywordFilters, value: string) => {
+    const sp = new URLSearchParams(params.toString());
+    if (value) sp.set(key, value);
+    else sp.delete(key);
+    sp.delete("page");
+    setSelected(new Set());
+    router.replace(`${pathname}?${sp.toString()}`, { scroll: false });
+  };
 
-  const filtered = useMemo(
-    () =>
-      keywords.filter(
-        (k) =>
-          (!q || k.keyword.includes(q.toLowerCase())) &&
-          (!status || k.status === status) &&
-          (!locale || k.locale === locale) &&
-          (!market || k.country === market) &&
-          (!priority || k.priority === priority) &&
-          (!cluster || k.cluster === cluster),
-      ),
-    [keywords, q, status, locale, market, priority, cluster],
-  );
+  // Ô tìm kiếm: chờ người dùng ngừng gõ 350ms rồi mới lọc
+  useEffect(() => {
+    if (q === (filters.q ?? "")) return;
+    const id = setTimeout(() => setFilter("q", q.trim()), 350);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q]);
+
+  const marketsInUse = facets.countries;
+  const clusters = facets.clusters;
+  const filtered = keywords;
 
   const groups = useMemo(() => {
     if (!groupByCluster) return [{ name: null as string | null, rows: filtered }];
@@ -94,8 +115,14 @@ export function KeywordTable({
     });
   };
 
-  const exportCsv = () => {
-    const rows = filtered.length ? filtered : keywords;
+  const exportCsv = () =>
+    start(async () => {
+      const res = await exportKeywords(project.id, filters);
+      if (!res.ok) return void toast.error(res.error);
+      downloadCsv(res.data);
+    });
+
+  const downloadCsv = (rows: Keyword[]) => {
     const head = ["keyword", "locale", "country", "intent", "difficulty", "priority", "cluster", "content_type", "status", "position", "target_url"];
     const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
     const csv = [head.join(","), ...rows.map((k) => [k.keyword, k.locale, k.country, k.intent, k.difficulty, k.priority, k.cluster, k.content_type, k.status, k.current_position, k.target_url].map(esc).join(","))].join("\n");
@@ -106,7 +133,7 @@ export function KeywordTable({
     a.click();
   };
 
-  if (keywords.length === 0) {
+  if (total === 0) {
     return (
       <Card>
         <EmptyState
@@ -142,7 +169,7 @@ export function KeywordTable({
           <Input className="pl-9" placeholder={t("searchPh")} value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-          <Select value={status} onChange={(e) => setStatus(e.target.value)} className="sm:w-auto">
+          <Select value={status} onChange={(e) => setFilter("status", e.target.value)} className="sm:w-auto">
             <option value="">{t("allStatus")}</option>
             {STATUSES.map((s) => (
               <option key={s} value={s}>
@@ -150,7 +177,7 @@ export function KeywordTable({
               </option>
             ))}
           </Select>
-          <Select value={priority} onChange={(e) => setPriority(e.target.value)} className="sm:w-auto">
+          <Select value={priority} onChange={(e) => setFilter("priority", e.target.value)} className="sm:w-auto">
             <option value="">{t("allPriority")}</option>
             {(["high", "medium", "low"] as const).map((p) => (
               <option key={p} value={p}>
@@ -159,7 +186,7 @@ export function KeywordTable({
             ))}
           </Select>
           {marketsInUse.length > 1 && (
-            <Select value={market} onChange={(e) => setMarket(e.target.value)} className="sm:w-auto">
+            <Select value={market} onChange={(e) => setFilter("market", e.target.value)} className="sm:w-auto">
               <option value="">{t("allMarkets")}</option>
               {marketsInUse.map((m) => (
                 <option key={m} value={m}>
@@ -169,7 +196,7 @@ export function KeywordTable({
             </Select>
           )}
           {project.locales.length > 1 && (
-            <Select value={locale} onChange={(e) => setLocale(e.target.value)} className="sm:w-auto">
+            <Select value={locale} onChange={(e) => setFilter("locale", e.target.value)} className="sm:w-auto">
               <option value="">{t("allLocales")}</option>
               {project.locales.map((l) => (
                 <option key={l} value={l}>
@@ -179,7 +206,7 @@ export function KeywordTable({
             </Select>
           )}
           {clusters.length > 0 && (
-            <Select value={cluster} onChange={(e) => setCluster(e.target.value)} className="sm:w-auto sm:max-w-48">
+            <Select value={cluster} onChange={(e) => setFilter("cluster", e.target.value)} className="sm:w-auto sm:max-w-48">
               <option value="">{t("allClusters")}</option>
               {clusters.map((c) => (
                 <option key={c} value={c}>
@@ -190,7 +217,7 @@ export function KeywordTable({
           )}
         </div>
         <div className="flex gap-2">
-          <Button variant={groupByCluster ? "primary" : "secondary"} size="icon" title={t("groupByCluster")} onClick={() => setGroupByCluster((g) => !g)}>
+          <Button variant={groupByCluster ? "primary" : "secondary"} size="icon" title={t("groupByCluster")} onClick={() => setFilter("group", groupByCluster ? "" : "cluster")}>
             <Layers className="h-4 w-4" />
           </Button>
           <Button variant="secondary" size="icon" title={t("exportCsv")} onClick={exportCsv}>
@@ -367,8 +394,16 @@ export function KeywordTable({
         </table>
         {filtered.length === 0 && <p className="px-5 py-10 text-center text-sm text-muted">{t("noMatch")}</p>}
       </div>
-      <div className="border-t border-border px-4 py-2.5 text-xs text-muted">
-        {t("showing", { shown: filtered.length, total: keywords.length })}
+      <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-2 text-xs text-muted">
+        <span>
+          {t("showing", {
+            from: matched ? (page - 1) * pageSize + 1 : 0,
+            to: (page - 1) * pageSize + keywords.length,
+            shown: matched,
+            total,
+          })}
+        </span>
+        <Pager page={page} pageSize={pageSize} total={matched} />
       </div>
 
       <AddModal open={addOpen} onClose={() => setAddOpen(false)} project={project} />

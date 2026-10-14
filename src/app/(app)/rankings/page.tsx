@@ -7,59 +7,63 @@ import { getWorkspace } from "@/lib/context";
 import { countryName, flag } from "@/lib/locales";
 import { getLocale } from "next-intl/server";
 import { isFresh } from "@/lib/rank-check";
+import { PAGE_SIZE, pageOf } from "@/lib/paging";
+import { Pager } from "@/components/ui/pager";
 import { AutoCheckToggle } from "./auto-toggle";
 import { CheckAllButton } from "./check-all";
 
 export const maxDuration = 300;
 
-export default async function RankingsPage() {
+export default async function RankingsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const { supabase, active, profile } = await getWorkspace();
   const t = await getTranslations("rankings");
   const format = await getFormatter();
   const ui = await getLocale();
   if (!active) return <NoProject />;
 
-  const { data: keywords } = await supabase
-    .from("keywords")
-    .select("*")
-    .eq("project_id", active.id)
-    .neq("status", "ignored")
-    .order("current_position", { ascending: true, nullsFirst: false })
-    .limit(500);
+  const page = pageOf((await searchParams).page);
+  const from = (page - 1) * PAGE_SIZE;
+
+  // Chỉ tải 100 từ khóa mỗi trang; thống kê + lịch sử tính trong database (không bị giới hạn 1.000 dòng)
+  const [{ data: keywords, count }, { data: stats }, { data: lastRun }] = await Promise.all([
+    supabase
+      .from("keywords")
+      .select("*", { count: "exact" })
+      .eq("project_id", active.id)
+      .neq("status", "ignored")
+      .order("current_position", { ascending: true, nullsFirst: false })
+      .order("id")
+      .range(from, from + PAGE_SIZE - 1),
+    supabase
+      .rpc("keyword_stats", { p_project: active.id })
+      .maybeSingle<{ tracked: number; top3: number; top10: number; top30: number; fresh: number }>(),
+    supabase
+      .from("cron_runs")
+      .select("finished_at, checked, remaining, note")
+      .eq("job", "rankings")
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   const ids = (keywords ?? []).map((k) => k.id);
-  const { data: checks } = ids.length
-    ? await supabase.from("rank_checks").select("keyword_id, position, checked_at").in("keyword_id", ids).order("checked_at", { ascending: false }).limit(5000)
+  const { data: hist } = ids.length
+    ? await supabase.rpc("rank_history", { p_keyword_ids: ids, p_limit: 10 })
     : { data: [] };
+  const history = new Map<string, (number | null)[]>(
+    ((hist ?? []) as { keyword_id: string; positions: (number | null)[] }[]).map((h) => [h.keyword_id, h.positions]),
+  );
 
-  const history = new Map<string, (number | null)[]>();
-  for (const c of checks ?? []) {
-    const arr = history.get(c.keyword_id) ?? [];
-    if (arr.length < 10) arr.push(c.position);
-    history.set(c.keyword_id, arr);
-  }
-
-  const { data: lastRun } = await supabase
-    .from("cron_runs")
-    .select("finished_at, checked, note")
-    .eq("job", "rankings")
-    .order("started_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  const freshCount = (keywords ?? []).filter((k) => isFresh(k)).length;
+  const freshCount = stats?.fresh ?? 0;
   const autoReady = active.auto_rank_check !== undefined; // migration 0006 đã chạy
-
-  const tracked = (keywords ?? []).filter((k) => k.last_checked_at);
-  const top3 = tracked.filter((k) => k.current_position && k.current_position <= 3).length;
-  const top10 = tracked.filter((k) => k.current_position && k.current_position <= 10).length;
-  const top30 = tracked.filter((k) => k.current_position).length;
+  const total = count ?? 0;
 
   return (
     <>
       <PageHeader
         title={t("title")}
         description={t("subtitle", { domain: active.domain })}
-        actions={profile?.role !== "viewer" && <CheckAllButton projectId={active.id} ids={ids} />}
+        actions={profile?.role !== "viewer" && <CheckAllButton projectId={active.id} disabled={!total} />}
       />
 
       {autoReady && (
@@ -74,6 +78,7 @@ export default async function RankingsPage() {
                   <>
                     {" · "}
                     {t("autoLast", { when: format.relativeTime(new Date(lastRun.finished_at)), count: lastRun.checked })}
+                    {lastRun.remaining > 0 && ` · ${t("autoRemaining", { count: lastRun.remaining })}`}
                     {lastRun.note === "budget_exceeded" && ` · ${t("autoBudgetStop")}`}
                     {lastRun.note === "budget_warning_fresh_only" && ` · ${t("autoBudgetFresh")}`}
                   </>
@@ -87,10 +92,10 @@ export default async function RankingsPage() {
 
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: t("tracked"), v: tracked.length },
-          { label: "Top 3", v: top3 },
-          { label: "Top 10", v: top10 },
-          { label: "Top 30", v: top30 },
+          { label: t("tracked"), v: stats?.tracked ?? 0 },
+          { label: "Top 3", v: stats?.top3 ?? 0 },
+          { label: "Top 10", v: stats?.top10 ?? 0 },
+          { label: "Top 30", v: stats?.top30 ?? 0 },
         ].map((s) => (
           <Card key={s.label} className="p-5">
             <div className="text-sm text-muted">{s.label}</div>
@@ -168,6 +173,9 @@ export default async function RankingsPage() {
                 })}
               </tbody>
             </table>
+            <div className="flex justify-end border-t border-border px-4 py-2">
+              <Pager page={page} pageSize={PAGE_SIZE} total={total} />
+            </div>
           </div>
         )}
       </Card>

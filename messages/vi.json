@@ -41,7 +41,10 @@
     "noProjectTitle": "Bắt đầu bằng việc tạo dự án",
     "noProjectDesc": "Mỗi dự án là một website doanh nghiệp với domain, thị trường và ngôn ngữ mục tiêu.",
     "createProject": "Tạo dự án",
-    "cost": "Chi phí ước tính: {cost}"
+    "cost": "Chi phí ước tính: {cost}",
+    "prevPage": "Trang trước",
+    "nextPage": "Trang sau",
+    "pageOf": "Trang {page}/{pages}"
   },
   "login": {
     "title": "Đăng nhập {name}",
@@ -117,7 +120,7 @@
     "colPosition": "Vị trí",
     "colStatus": "Trạng thái",
     "noMatch": "Không có từ khóa phù hợp bộ lọc",
-    "showing": "Hiển thị {shown} / {total} từ khóa",
+    "showing": "Hiển thị {from}–{to} / {shown} từ khóa (dự án có {total})",
     "status": {
       "new": "Mới",
       "planned": "Lên kế hoạch",
@@ -362,13 +365,14 @@
     "auto": "Tự động",
     "autoOn": "Đã bật tự động kiểm tra thứ hạng",
     "autoOff": "Đã tắt tự động kiểm tra thứ hạng",
-    "autoScheduleOn": "Tự động kiểm tra: T2, T4, T6 lúc 6:00 sáng",
+    "autoScheduleOn": "Tự động kiểm tra mỗi sáng lúc 6:00",
     "autoScheduleOff": "Tự động kiểm tra đang tắt cho dự án này",
     "autoRule": "Từ khóa thường 1 lần/tuần; bài mới đăng/cập nhật trong 30 ngày ({fresh} từ khóa) 3 lần/tuần",
     "autoLast": "Lần chạy gần nhất {when}: {count} từ khóa",
     "autoBudgetStop": "dừng vì hết ngân sách Bright Data",
     "autoBudgetFresh": "ngân sách ≥80% nên chỉ kiểm tra bài mới",
-    "freshBadge": "Mới"
+    "freshBadge": "Mới",
+    "autoRemaining": "còn {count} từ khóa chờ lần sau"
   },
   "settings": {
     "title": "Cài đặt",
@@ -441,7 +445,13 @@
     "estimateNote": "Chi phí Claude được tính từ số token và bảng giá công bố, có thể lệch nhỏ so với hóa đơn. Bright Data tính $1.50 / 1.000 request thành công.",
     "notReady": "Chưa bật theo dõi chi phí",
     "notReadyDesc": "Chạy file supabase/migrations/0004_usage_and_budgets.sql trong Supabase SQL Editor rồi tải lại trang.",
-    "auto": "Tự động (lịch)"
+    "auto": "Tự động (lịch)",
+    "byProject": "Theo dự án",
+    "byProjectDesc": "Chi phí tháng này của từng dự án. Đặt ngân sách riêng để một dự án không dùng hết ngân sách chung (để trống = không giới hạn riêng).",
+    "project": "Dự án",
+    "projectBudget": "Ngân sách riêng (USD/tháng)",
+    "noLimit": "Không",
+    "saveShort": "Lưu"
   },
   "leads": {
     "title": "Khách hàng tiềm năng",

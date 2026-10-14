@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { checkRankings } from "@/app/actions/keywords";
+import { checkRankings, listTrackableKeywordIds } from "@/app/actions/keywords";
 import { Button } from "@/components/ui";
 import { useCostLabel } from "@/components/use-cost";
 
 /** Kiểm tra theo lô 25 từ khóa/lần để tránh timeout. */
-export function CheckAllButton({ projectId, ids }: { projectId: string; ids: string[] }) {
+export function CheckAllButton({ projectId, disabled }: { projectId: string; disabled?: boolean }) {
   const t = useTranslations("rankings");
   const router = useRouter();
   const costLabel = useCostLabel();
@@ -18,9 +18,13 @@ export function CheckAllButton({ projectId, ids }: { projectId: string; ids: str
   return (
     <Button
       loading={pending}
-      disabled={!ids.length}
+      disabled={disabled}
       onClick={() =>
         start(async () => {
+          // Lấy id của mọi từ khóa (không chỉ trang đang xem)
+          const list = await listTrackableKeywordIds(projectId);
+          if (!list.ok) return void toast.error(list.error);
+          const ids = list.data;
           let checked = 0;
           let found = 0;
           let skipped = 0;

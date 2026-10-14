@@ -13,7 +13,7 @@
 | **Từ khóa → Danh sách** | Lọc, nhóm theo cụm, đổi trạng thái (Mới → Lên kế hoạch → Đang viết → Đã đăng), thao tác hàng loạt, AI gom cụm, xuất CSV, thêm thủ công |
 | **Audit SEO** | Tải trang qua Web Unlocker → kiểm tra meta, heading, nội dung, canonical, indexability, Open Graph, ảnh alt, liên kết, JSON-LD, `lang`, **hreflang theo ngôn ngữ của dự án** → chấm điểm → Claude đề xuất cách sửa theo thứ tự ưu tiên |
 | **Schema B2B** | Form mẫu (Organization, LocalBusiness, Service, Product, FAQPage, BreadcrumbList, Article) với xem trước trực tiếp, hoặc **AI tạo JSON-LD từ URL**; thư viện schema, sao chép 1 chạm |
-| **Thứ hạng** | Kiểm tra vị trí domain trong Top 30 Google **theo từng quốc gia** (proxy đặt tại nước đó), lịch sử, thay đổi, biểu đồ xu hướng. **Tự động kiểm tra** T2/T4/T6 lúc 6:00: từ khóa thường 1 lần/tuần, bài mới đăng/cập nhật trong 30 ngày 3 lần/tuần, tôn trọng ngân sách |
+| **Thứ hạng** | Kiểm tra vị trí domain trong Top 30 Google **theo từng quốc gia** (proxy đặt tại nước đó), lịch sử, thay đổi, biểu đồ xu hướng. **Tự động kiểm tra** mỗi sáng 6:00: từ khóa thường 1 lần/tuần, bài mới đăng/cập nhật trong 30 ngày 3 lần/tuần, tôn trọng ngân sách |
 | **Dự án** | Nhiều website; mỗi dự án có ngôn ngữ chính, ~40 ngôn ngữ nội dung và **nhiều thị trường quốc tế** (toàn bộ quốc gia Google hỗ trợ) |
 | **Khách hàng** | Tìm buyer trên LinkedIn theo sản phẩm, thị trường, chức danh (Google qua Bright Data SERP) hoặc dán link → lấy hồ sơ công khai (Bright Data Web Scraper API, tối đa 20 hồ sơ/lần) → Claude chấm điểm phù hợp và soạn lời chào kết nối → theo dõi trạng thái, người phụ trách, ghi chú, xuất CSV. Hồ sơ tự xóa sau 12 tháng; không tự gửi tin nhắn |
 | **Chi phí** (Quản trị) | Chi phí Claude API và Bright Data trong tháng theo chức năng và nhân viên, số dư Bright Data, ngân sách tháng (mặc định $20 Claude, $10 Bright Data): đạt 80% hiện cảnh báo, đạt 100% tạm khóa chức năng tốn phí |
@@ -25,7 +25,7 @@ Tối ưu cho nhân viên: giao diện tiếng Việt/English, chế độ sáng
 
 ### 1. Supabase
 1. Tạo project trên [supabase.com](https://supabase.com).
-2. Chạy migration **theo thứ tự**: dán lần lượt `0001_init.sql` → `0002_international_and_profiles.sql` → `0003_grants.sql` → `0004_usage_and_budgets.sql` → `0005_leads.sql` → `0006_auto_rank_checks.sql` (trong `supabase/migrations/`) vào **SQL Editor**, hoặc `supabase db push` nếu dùng Supabase CLI.
+2. Chạy migration **theo thứ tự**: dán lần lượt `0001_init.sql` → `0002_international_and_profiles.sql` → `0003_grants.sql` → `0004_usage_and_budgets.sql` → `0005_leads.sql` → `0006_auto_rank_checks.sql` → `0007_scale.sql` (trong `supabase/migrations/`) vào **SQL Editor**, hoặc `supabase db push` nếu dùng Supabase CLI.
 3. **Authentication → Providers → Email**: bật Email. Với hệ thống nội bộ nên **tắt "Allow new users to sign up"** và mời nhân viên qua **Authentication → Users → Invite**.
 4. **Authentication → URL Configuration**: thêm `https://<domain-app>/auth/callback` vào Redirect URLs.
 5. Người đăng nhập đầu tiên tự động là **Quản trị**; những người sau là **Biên tập**, admin đổi quyền trong *Cài đặt*.
@@ -48,10 +48,10 @@ Triển khai: Vercel (khuyến nghị) — đặt các biến môi trường nh�
 ### Tự động kiểm tra thứ hạng
 
 1. Chạy migration `0006_auto_rank_checks.sql`.
-2. Trên Vercel đặt thêm `SUPABASE_SERVICE_ROLE_KEY` và `CRON_SECRET` rồi deploy lại — `vercel.json` đã khai báo lịch `0 23 * * 0,2,4` (UTC) = **6:00 sáng T2, T4, T6 giờ Việt Nam**.
+2. Trên Vercel đặt thêm `SUPABASE_SERVICE_ROLE_KEY` và `CRON_SECRET` rồi deploy lại — `vercel.json` đã khai báo lịch `0 23 * * *` (UTC) = **6:00 sáng mỗi ngày giờ Việt Nam**. Chạy mỗi ngày chỉ để rải việc; số lần kiểm tra mỗi từ khóa do quy tắc bên dưới quyết định.
 3. Vào **Thứ hạng** → bật công tắc **Tự động** cho dự án cần theo dõi.
 
-Quy tắc mỗi lần chạy: từ khóa (trừ *Bỏ qua*) quá 6 ngày chưa kiểm tra → kiểm tra (≈ 1 lần/tuần); từ khóa *Đã đăng* hoặc được đánh dấu **Vừa cập nhật nội dung** trong 30 ngày qua → quá 36 giờ là kiểm tra (≈ 3 lần/tuần). Ngân sách Bright Data ≥ 80% chỉ kiểm tra bài mới; ≥ 100% dừng; số từ khóa luôn được giới hạn theo tiền còn lại. Mỗi lần chạy tối đa ~4 phút, phần chưa kịp sẽ chạy ở lần sau. Chi phí ghi ở trang **Chi phí** với tên "Tự động (lịch)".
+Quy tắc mỗi lần chạy: từ khóa (trừ *Bỏ qua*) đủ 7 ngày chưa kiểm tra → kiểm tra (1 lần/tuần); từ khóa *Đã đăng* hoặc được đánh dấu **Vừa cập nhật nội dung** trong 30 ngày qua → quá 36 giờ là kiểm tra (cách ngày, ≈ 3–4 lần/tuần). Ngân sách Bright Data ≥ 80% chỉ kiểm tra bài mới; ≥ 100% dừng; số từ khóa luôn được giới hạn theo tiền còn lại. Mỗi lần chạy tối đa ~4 phút; các dự án chạy song song và lần lượt chia suất kiểm tra (không dự án nào bị bỏ đói), phần chưa kịp sẽ chạy ở lần sau. Dự án có **ngân sách riêng** (Chi phí → Theo dự án) sẽ dừng khi hết phần của mình. Chi phí ghi ở trang **Chi phí** với tên "Tự động (lịch)".
 
 Xem trước (không tốn phí): `curl -H "Authorization: Bearer $CRON_SECRET" "https://<domain>/api/cron/rankings?dry=1"`.
 

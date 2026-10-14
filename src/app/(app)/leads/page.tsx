@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { NoProject } from "@/components/no-project";
 import { PageHeader } from "@/components/ui";
 import { getWorkspace } from "@/lib/context";
+import { fetchAll } from "@/lib/paging";
 import type { Lead } from "@/lib/types";
 import { LeadsView } from "./leads-view";
 
@@ -17,7 +18,12 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   await supabase.rpc("purge_expired_leads");
 
   const [{ data: leads, error }, { data: staff }] = await Promise.all([
-    supabase.from("leads").select("*").eq("project_id", active.id).order("created_at", { ascending: false }).limit(2000),
+    // Đọc theo khối 1.000 dòng (giới hạn của Supabase), tối đa 5.000 khách hàng/dự án
+    fetchAll((from, to) =>
+      supabase.from("leads").select("*").eq("project_id", active.id).order("created_at", { ascending: false }).order("id").range(from, to),
+    5000)
+      .then((data) => ({ data, error: null }))
+      .catch((e: Error) => ({ data: null, error: e })),
     supabase.from("profiles").select("id, full_name, email").order("full_name"),
   ]);
 

@@ -24,7 +24,7 @@ export default async function Dashboard() {
   }
 
   const [kw, audits, schemas, ranked] = await Promise.all([
-    supabase.from("keywords").select("status, current_position").eq("project_id", active.id),
+    supabase.rpc("keyword_stats", { p_project: active.id }).maybeSingle<Record<string, number>>(),
     supabase.from("audits").select("id, url, score, created_at").eq("project_id", active.id).order("created_at", { ascending: false }).limit(5),
     supabase.from("schemas").select("id", { count: "exact", head: true }).eq("project_id", active.id),
     supabase
@@ -36,16 +36,17 @@ export default async function Dashboard() {
       .limit(6),
   ]);
 
-  const keywords = kw.data ?? [];
-  const top10 = keywords.filter((k) => k.current_position && k.current_position <= 10).length;
+  // Thống kê tính trong database → đúng cả khi dự án có hàng nghìn từ khóa
+  const st = kw.data ?? {};
+  const top10 = st.top10 ?? 0;
   const avgScore = audits.data?.length
     ? Math.round(audits.data.reduce((s, a) => s + (a.score ?? 0), 0) / audits.data.length)
     : null;
-  const pipeline = STATUSES.map((s) => ({ s, n: keywords.filter((k) => k.status === s).length }));
+  const pipeline = STATUSES.map((s) => ({ s, n: st[`n_${s}`] ?? 0 }));
   const pipelineMax = Math.max(1, ...pipeline.map((p) => p.n));
 
   const stats = [
-    { label: t("statKeywords"), value: keywords.length, icon: Search },
+    { label: t("statKeywords"), value: st.total ?? 0, icon: Search },
     { label: t("statTop10"), value: top10, icon: TrendingUp },
     { label: t("statAudit"), value: avgScore ?? "—", icon: ScanSearch },
     { label: t("statSchemas"), value: schemas.count ?? 0, icon: Braces },

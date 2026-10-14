@@ -4,11 +4,13 @@ import { revalidatePath } from "next/cache";
 import { analyzeKeywords, clusterKeywords, type KeywordAnalysis } from "@/lib/ai";
 import { googleSearch, type SerpResult } from "@/lib/brightdata";
 import { fail, type ActionResult } from "@/lib/context";
+import { applyKeywordFilters, type KeywordFilters } from "@/lib/keyword-filters";
+import { fetchAll } from "@/lib/paging";
 import { checkKeywordRanks } from "@/lib/rank-check";
 import { metered } from "@/lib/usage";
 import { staffLocale } from "@/lib/staff-locale";
 import { getSession } from "@/lib/supabase/server";
-import type { KeywordStatus, Priority, Project } from "@/lib/types";
+import type { Keyword, KeywordStatus, Priority, Project } from "@/lib/types";
 
 async function loadProject(projectId: string) {
   const session = await getSession();
@@ -184,6 +186,44 @@ export async function markContentUpdated(ids: string[]): Promise<ActionResult> {
     revalidatePath("/keywords");
     revalidatePath("/rankings");
     return { ok: true, data: undefined };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Toàn bộ từ khóa khớp bộ lọc (để xuất CSV) — đọc theo từng khối 1.000 dòng. */
+export async function exportKeywords(projectId: string, filters: KeywordFilters): Promise<ActionResult<Keyword[]>> {
+  try {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized");
+    const rows = await fetchAll<Keyword>((from, to) =>
+      applyKeywordFilters(session.supabase.from("keywords").select("*").eq("project_id", projectId), filters)
+        .order("created_at", { ascending: false })
+        .order("id")
+        .range(from, to),
+    );
+    return { ok: true, data: rows };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Id của mọi từ khóa đang theo dõi (trừ Bỏ qua) — cho nút "Kiểm tra tất cả". */
+export async function listTrackableKeywordIds(projectId: string): Promise<ActionResult<string[]>> {
+  try {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized");
+    const rows = await fetchAll<{ id: string }>((from, to) =>
+      session.supabase
+        .from("keywords")
+        .select("id")
+        .eq("project_id", projectId)
+        .neq("status", "ignored")
+        .order("current_position", { ascending: true, nullsFirst: false })
+        .order("id")
+        .range(from, to),
+    );
+    return { ok: true, data: rows.map((r) => r.id) };
   } catch (e) {
     return fail(e);
   }

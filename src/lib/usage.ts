@@ -49,13 +49,25 @@ export function recordBrightData(requests = 1) {
 }
 
 export class BudgetExceededError extends Error {
-  constructor(public provider: "claude" | "brightdata") {
+  constructor(public provider: "claude" | "brightdata" | "project") {
     super(
       provider === "claude"
         ? "Đã hết ngân sách Claude API của tháng này. Quản trị có thể nâng hạn mức ở trang Chi phí."
-        : "Đã hết ngân sách Bright Data của tháng này. Quản trị có thể nâng hạn mức ở trang Chi phí.",
+        : provider === "brightdata"
+          ? "Đã hết ngân sách Bright Data của tháng này. Quản trị có thể nâng hạn mức ở trang Chi phí."
+          : "Dự án này đã dùng hết ngân sách riêng của tháng. Quản trị có thể nâng hạn mức ở trang Chi phí → Theo dự án.",
     );
   }
+}
+
+/** Chi phí tháng này + ngân sách riêng của dự án (budget null = không giới hạn riêng). */
+export async function getProjectSpend(supabase: SupabaseClient, projectId: string) {
+  const { data, error } = await supabase.rpc("project_month_spend", { p_project: projectId });
+  if (error || !data?.[0]) return null; // migration 0007 chưa chạy → không chặn
+  return {
+    spent: Number(data[0].spent_usd),
+    budget: data[0].budget_usd == null ? null : Number(data[0].budget_usd),
+  };
 }
 
 export interface MonthSpend {
@@ -98,6 +110,10 @@ export async function metered<T>(ctx: MeteredContext, fn: () => Promise<T>): Pro
     if (ctx.providers.includes("claude") && spend.claude_usd >= spend.claude_budget_usd) throw new BudgetExceededError("claude");
     if (ctx.providers.includes("brightdata") && spend.brightdata_usd >= spend.brightdata_budget_usd)
       throw new BudgetExceededError("brightdata");
+  }
+  if (ctx.projectId) {
+    const p = await getProjectSpend(ctx.supabase, ctx.projectId);
+    if (p?.budget != null && p.spent >= p.budget) throw new BudgetExceededError("project");
   }
 
   const meter: Meter = { claude: [], brightdataRequests: 0 };

@@ -26,3 +26,18 @@ export async function updateBudgets(input: { claude: number; brightdata: number 
     return fail(e);
   }
 }
+
+/** Ngân sách riêng của một dự án (USD/tháng, Claude + Bright Data). null = không giới hạn riêng. */
+export async function updateProjectBudget(projectId: string, budget: number | null): Promise<ActionResult> {
+  try {
+    const session = await getSession();
+    if (session?.profile?.role !== "admin") throw new Error("Admin only");
+    const value = budget == null ? null : z.number().min(0).max(100000).parse(budget);
+    const { error } = await session.supabase.from("projects").update({ monthly_budget_usd: value }).eq("id", projectId);
+    if (error) throw error;
+    revalidatePath("/usage");
+    return { ok: true, data: undefined };
+  } catch (e) {
+    return fail(e);
+  }
+}

@@ -1,12 +1,13 @@
 import { redirect } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
-import { Bot, ExternalLink, Globe, History, Users, Wallet } from "lucide-react";
+import { Bot, ExternalLink, FolderKanban, Globe, History, Users, Wallet } from "lucide-react";
 import { Badge, Card, CardHeader, EmptyState, PageHeader } from "@/components/ui";
 import { getBalance } from "@/lib/brightdata";
 import { getWorkspace } from "@/lib/context";
 import { getMonthSpend } from "@/lib/usage";
 import { cn } from "@/lib/utils";
 import { BudgetForm } from "./budget-form";
+import { ProjectBudgets, type ProjectSpendRow } from "./project-budgets";
 
 interface UsageRow {
   created_at: string;
@@ -30,11 +31,14 @@ export default async function UsagePage() {
   const usd = (n: number) => format.number(n, { style: "currency", currency: "USD", maximumFractionDigits: n < 1 ? 4 : 2 });
 
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
-  const [spend, balance, { data: events, error }, { data: staff }] = await Promise.all([
+  const [spend, balance, { data: events, error }, { data: summary }, { data: staff }, { data: projectList }] = await Promise.all([
     getMonthSpend(supabase),
     getBalance(),
-    supabase.from("usage_events").select("*").gte("created_at", monthStart).order("created_at", { ascending: false }).limit(5000),
+    supabase.from("usage_events").select("*").gte("created_at", monthStart).order("created_at", { ascending: false }).limit(40),
+    // Tổng hợp trong database: đúng dù tháng có hàng chục nghìn lượt
+    supabase.rpc("usage_summary", { p_from: monthStart }),
     supabase.from("profiles").select("id, full_name, email"),
+    supabase.from("projects").select("*").order("name"),
   ]);
 
   if (!spend || error) {
@@ -50,20 +54,30 @@ export default async function UsagePage() {
 
   const rows = (events ?? []) as UsageRow[];
   const names = new Map((staff ?? []).map((s) => [s.id, s.full_name || s.email]));
-  const sum = (list: UsageRow[], provider?: string) =>
-    list.filter((r) => !provider || r.provider === provider).reduce((s, r) => s + Number(r.cost_usd), 0);
+  const agg = (summary ?? []) as { dim: string; key: string; provider: string; cost_usd: number }[];
+  const totalsFor = (dim: string, key: string) => {
+    const list = agg.filter((a) => a.dim === dim && a.key === key);
+    const claude = list.filter((a) => a.provider === "claude").reduce((s, a) => s + Number(a.cost_usd), 0);
+    const bd = list.filter((a) => a.provider === "brightdata").reduce((s, a) => s + Number(a.cost_usd), 0);
+    return { claude, bd, total: claude + bd };
+  };
+  const keysOf = (dim: string) => Array.from(new Set(agg.filter((a) => a.dim === dim).map((a) => a.key)));
 
-  const byFeature = FEATURES.map((f) => {
-    const list = rows.filter((r) => r.feature === f);
-    return { f, claude: sum(list, "claude"), bd: sum(list, "brightdata"), total: sum(list) };
-  }).filter((x) => x.total > 0);
+  const byFeature = FEATURES.map((f) => ({ f, ...totalsFor("feature", f) })).filter((x) => x.total > 0);
 
-  const byUser = Array.from(new Set(rows.map((r) => r.user_id)))
-    .map((id) => {
-      const list = rows.filter((r) => r.user_id === id);
-      return { id, name: id ? names.get(id) || "—" : t("auto"), claude: sum(list, "claude"), bd: sum(list, "brightdata"), total: sum(list) };
-    })
+  const byUser = keysOf("user")
+    .map((id) => ({ id, name: id === "auto" ? t("auto") : names.get(id) || "—", ...totalsFor("user", id) }))
     .sort((a, b) => b.total - a.total);
+
+  const byProject: ProjectSpendRow[] = (projectList ?? [])
+    .map((p) => ({
+      id: p.id as string,
+      name: p.name as string,
+      budget: p.monthly_budget_usd == null ? null : Number(p.monthly_budget_usd),
+      ...totalsFor("project", p.id),
+    }))
+    .sort((a, b) => b.total - a.total);
+  const projectBudgetsReady = (projectList ?? []).some((p) => "monthly_budget_usd" in p);
 
   const meters = [
     { key: "claude", icon: Bot, spent: spend.claude_usd, budget: spend.claude_budget_usd },
@@ -179,7 +193,7 @@ export default async function UsagePage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {byUser.map((x) => (
-                  <tr key={x.id ?? "none"}>
+                  <tr key={x.id}>
                     <td className="px-5 py-2.5 text-text">{x.name}</td>
                     <td className="px-3 py-2.5 text-right tabular-nums text-muted">{usd(x.claude)}</td>
                     <td className="px-3 py-2.5 text-right tabular-nums text-muted">{usd(x.bd)}</td>
@@ -192,6 +206,13 @@ export default async function UsagePage() {
             <p className="px-5 py-8 text-center text-sm text-muted">{t("empty")}</p>
           )}
         </Card>
+
+        {projectBudgetsReady && (
+          <Card className="lg:col-span-2">
+            <CardHeader title={t("byProject")} description={t("byProjectDesc")} icon={<FolderKanban className="h-4 w-4" />} />
+            <ProjectBudgets rows={byProject} />
+          </Card>
+        )}
 
         <Card>
           <CardHeader title={t("budgets")} description={t("budgetsDesc")} icon={<Wallet className="h-4 w-4" />} />

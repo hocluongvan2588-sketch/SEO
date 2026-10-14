@@ -41,7 +41,10 @@
     "noProjectTitle": "Start by creating a project",
     "noProjectDesc": "Each project is a company website with its domain, market and target languages.",
     "createProject": "Create project",
-    "cost": "Estimated cost: {cost}"
+    "cost": "Estimated cost: {cost}",
+    "prevPage": "Previous page",
+    "nextPage": "Next page",
+    "pageOf": "Page {page} of {pages}"
   },
   "login": {
     "title": "Sign in to {name}",
@@ -117,7 +120,7 @@
     "colPosition": "Position",
     "colStatus": "Status",
     "noMatch": "No keywords match the filters",
-    "showing": "Showing {shown} of {total} keywords",
+    "showing": "Showing {from}–{to} of {shown} keywords ({total} in project)",
     "status": {
       "new": "New",
       "planned": "Planned",
@@ -362,13 +365,14 @@
     "auto": "Auto",
     "autoOn": "Automatic rank checks enabled",
     "autoOff": "Automatic rank checks disabled",
-    "autoScheduleOn": "Auto-check: Mon, Wed, Fri at 6:00 AM (Vietnam time)",
+    "autoScheduleOn": "Auto-check every morning at 6:00 AM (Vietnam time)",
     "autoScheduleOff": "Automatic checks are off for this project",
     "autoRule": "Regular keywords weekly; pages published/updated in the last 30 days ({fresh} keywords) 3× a week",
     "autoLast": "Last run {when}: {count} keywords",
     "autoBudgetStop": "stopped — Bright Data budget used up",
     "autoBudgetFresh": "budget ≥80%, only fresh pages checked",
-    "freshBadge": "New"
+    "freshBadge": "New",
+    "autoRemaining": "{count} keywords queued for next run"
   },
   "settings": {
     "title": "Settings",
@@ -441,7 +445,13 @@
     "estimateNote": "Claude cost is computed from tokens and published prices and may differ slightly from the invoice. Bright Data is $1.50 per 1,000 successful requests.",
     "notReady": "Cost tracking is not enabled",
     "notReadyDesc": "Run supabase/migrations/0004_usage_and_budgets.sql in the Supabase SQL Editor and reload.",
-    "auto": "Automatic (schedule)"
+    "auto": "Automatic (schedule)",
+    "byProject": "By project",
+    "byProjectDesc": "This month's cost per project. Set a project budget so one project can't use up the shared budget (empty = no project limit).",
+    "project": "Project",
+    "projectBudget": "Project budget (USD/month)",
+    "noLimit": "None",
+    "saveShort": "Save"
   },
   "leads": {
     "title": "Potential buyers",

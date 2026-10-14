@@ -19,7 +19,14 @@ export async function checkKeywordRanks(
   supabase: SupabaseClient,
   project: { domain: string; country: string },
   rows: RankRow[],
-  opts: { concurrency?: number; deadline?: number } = {},
+  opts: {
+    concurrency?: number;
+    deadline?: number;
+    /** Giới hạn số request đồng thời dùng chung giữa nhiều dự án (cron) */
+    limiter?: Semaphore;
+    /** Gọi trước mỗi từ khóa; trả false = dừng (vd. hết tiền được phép dùng) */
+    canStart?: () => boolean;
+  } = {},
 ) {
   let found = 0;
   let skipped = 0;
@@ -29,7 +36,9 @@ export async function checkKeywordRanks(
 
   async function worker() {
     for (let row = queue.shift(); row; row = queue.shift()) {
-      if (opts.deadline && Date.now() > opts.deadline) {
+      const release = opts.limiter ? await opts.limiter.acquire() : () => {};
+      if ((opts.deadline && Date.now() > opts.deadline) || (opts.canStart && !opts.canStart())) {
+        release();
         queue.unshift(row);
         return;
       }
@@ -40,6 +49,8 @@ export async function checkKeywordRanks(
         skipped++;
         lastError = err instanceof Error ? err.message : String(err);
         continue;
+      } finally {
+        release();
       }
       const { position, url } = rank;
       checked++;
@@ -62,11 +73,29 @@ export async function checkKeywordRanks(
   return { checked, found, skipped, lastError, remaining: queue.length };
 }
 
+/** Hàng đợi FIFO giới hạn số việc chạy cùng lúc — các dự án lần lượt được phục vụ (round-robin). */
+export class Semaphore {
+  private waiting: (() => void)[] = [];
+  constructor(private free: number) {}
+  async acquire(): Promise<() => void> {
+    if (this.free > 0) this.free--;
+    else await new Promise<void>((resolve) => this.waiting.push(resolve));
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      const next = this.waiting.shift();
+      if (next) next();
+      else this.free++;
+    };
+  }
+}
+
 /** Lịch tự động (giờ server, mỗi lần cron chạy) */
 export const AUTO_SCHEDULE = {
-  /** Từ khóa thường: kiểm tra lại khi đã quá 6 ngày → mỗi tuần 1 lần */
-  weeklyAfterHours: 6 * 24,
-  /** Bài vừa đăng/cập nhật trong 30 ngày: quá 36 giờ → khoảng 3 lần/tuần (T2, T4, T6) */
+  /** Từ khóa thường: đủ ~7 ngày (trừ 3 giờ cho cron chạy lệch giờ) → mỗi tuần 1 lần */
+  weeklyAfterHours: 7 * 24 - 3,
+  /** Bài vừa đăng/cập nhật trong 30 ngày: quá 36 giờ → cách ngày, khoảng 3–4 lần/tuần */
   freshDays: 30,
   freshAfterHours: 36,
   /** Chi phí tối đa một từ khóa (3 trang Google) — dùng để không vượt ngân sách */
