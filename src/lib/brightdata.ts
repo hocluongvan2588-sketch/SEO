@@ -160,3 +160,152 @@ export async function getBalance(): Promise<{ balance: number; pending: number }
     return null;
   }
 }
+
+// ---------------------------------------------------------------------------
+// LinkedIn — tìm buyer & lấy hồ sơ công khai
+// ---------------------------------------------------------------------------
+
+export interface LinkedInCandidate {
+  url: string;
+  name: string;
+  headline: string;
+  snippet?: string;
+}
+
+/** Chuẩn hóa link hồ sơ: https://www.linkedin.com/in/<slug>/ (bỏ mã vùng, query). */
+export function normalizeLinkedInUrl(raw: string): string | null {
+  try {
+    const trimmed = raw.trim();
+    const u = new URL(trimmed.startsWith("http") ? trimmed : `https://${trimmed}`);
+    if (!/(^|\.)linkedin\.com$/i.test(u.hostname)) return null;
+    const m = u.pathname.match(/^\/in\/([^/]+)/i);
+    if (!m) return null;
+    return `https://www.linkedin.com/in/${decodeURIComponent(m[1]).toLowerCase()}/`;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Tìm hồ sơ LinkedIn công khai qua Google (zone SERP sẵn có).
+ * Mỗi trang 10 kết quả = 1 request SERP.
+ */
+export async function findLinkedInProfiles(query: string, opts: { gl: string; pages?: number }): Promise<LinkedInCandidate[]> {
+  const seen = new Map<string, LinkedInCandidate>();
+  for (let page = 0; page < (opts.pages ?? 2); page++) {
+    const serp = await googleSearch(query, { hl: "en", gl: opts.gl, start: page * 10 });
+    for (const o of serp.organic) {
+      const url = normalizeLinkedInUrl(o.link);
+      if (!url || seen.has(url)) continue;
+      // Tiêu đề Google dạng "Jane Doe - Purchasing Manager - Acme Foods | LinkedIn"
+      const title = o.title.replace(/\s*[|·]\s*LinkedIn.*$/i, "");
+      const [name, ...rest] = title.split(/\s+[-–—]\s+/);
+      seen.set(url, { url, name: name?.trim() ?? "", headline: rest.join(" · ").trim(), snippet: o.description });
+    }
+    if (serp.organic.length < 8) break;
+  }
+  return [...seen.values()];
+}
+
+export interface LinkedInProfile {
+  url: string;
+  name: string | null;
+  headline: string | null;
+  company: string | null;
+  companyUrl: string | null;
+  location: string | null;
+  countryCode: string | null;
+  about: string | null;
+  experience: { title?: string; company?: string; duration?: string }[];
+  avatarUrl: string | null;
+  error?: string;
+}
+
+const LINKEDIN_PROFILE_DATASET = process.env.BRIGHTDATA_LINKEDIN_DATASET || "gd_l1viktl72bvl7bjuj0";
+
+const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
+
+function mapProfile(r: Record<string, unknown>, fallbackUrl: string): LinkedInProfile {
+  const cc = (r.current_company ?? {}) as Record<string, unknown>;
+  const exp = Array.isArray(r.experience) ? (r.experience as Record<string, unknown>[]) : [];
+  const input = (r.input ?? {}) as Record<string, unknown>;
+  const firstName = str(r.first_name);
+  return {
+    url: normalizeLinkedInUrl(String(r.input_url ?? input.url ?? r.url ?? fallbackUrl)) ?? fallbackUrl,
+    name: str(r.name) ?? (firstName ? `${firstName} ${str(r.last_name) ?? ""}`.trim() : null),
+    headline: str(r.position) ?? str(r.headline),
+    company: str(cc.name) ?? str(r.current_company_name),
+    companyUrl: str(cc.link) ?? str(cc.url),
+    location: str(r.city) ?? str(r.location),
+    countryCode: str(r.country_code)?.toLowerCase() ?? null,
+    about: str(r.about)?.slice(0, 2000) ?? null,
+    experience: exp.slice(0, 4).map((e) => ({
+      title: str(e.title) ?? undefined,
+      company: str(e.company) ?? undefined,
+      duration: str(e.duration) ?? (str(e.start_date) ? `${e.start_date} – ${str(e.end_date) ?? "now"}` : undefined),
+    })),
+    avatarUrl: str(r.avatar) ?? str(r.image_url),
+    error: str(r.error) ?? str(r.error_code) ?? undefined,
+  };
+}
+
+async function datasetsFetch(path: string, init?: RequestInit) {
+  const { apiKey } = config();
+  return fetch(`https://api.brightdata.com/datasets/v3${path}`, {
+    ...init,
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    cache: "no-store",
+    signal: AbortSignal.timeout(90_000),
+  });
+}
+
+function parseRecords(text: string): unknown[] {
+  const t = text.trim();
+  if (!t) return [];
+  if (t.startsWith("[")) return JSON.parse(t);
+  if (t.startsWith("{") && !t.includes("\n")) return [JSON.parse(t)];
+  return t.split("\n").filter(Boolean).map((l) => JSON.parse(l)); // ndjson
+}
+
+/**
+ * Lấy hồ sơ LinkedIn công khai theo URL (tối đa 20 URL/lần, chế độ đồng bộ).
+ * Bright Data xử lý quá 1 phút → trả 202 + snapshot_id → chờ rồi tải về.
+ * Tính phí theo số bản ghi trả về ($1.50 / 1.000).
+ */
+export async function scrapeLinkedInProfiles(urls: string[]): Promise<LinkedInProfile[]> {
+  const input = urls.slice(0, 20).map((url) => ({ url }));
+  if (!input.length) return [];
+  const qs = `dataset_id=${LINKEDIN_PROFILE_DATASET}&format=json&include_errors=true`;
+  const res = await datasetsFetch(`/scrape?${qs}`, { method: "POST", body: JSON.stringify({ input }) });
+
+  let records: unknown[];
+  if (res.status === 202) {
+    const { snapshot_id } = (await res.json()) as { snapshot_id?: string };
+    if (!snapshot_id) throw new BrightDataError("Bright Data không trả về snapshot_id");
+    records = await waitForSnapshot(snapshot_id);
+  } else if (res.ok) {
+    records = parseRecords(await res.text());
+  } else {
+    const body = await res.text().catch(() => "");
+    throw new BrightDataError(`Bright Data ${res.status}: ${body.slice(0, 200)} (dataset: ${LINKEDIN_PROFILE_DATASET})`);
+  }
+
+  recordBrightData(records.length);
+  return (records as Record<string, unknown>[]).map((r, i) => mapProfile(r, input[i]?.url ?? ""));
+}
+
+async function waitForSnapshot(id: string): Promise<unknown[]> {
+  const deadline = Date.now() + 4 * 60_000;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 5000));
+    const p = await datasetsFetch(`/progress/${id}`);
+    const { status } = (await p.json().catch(() => ({}))) as { status?: string };
+    if (status === "ready") {
+      const s = await datasetsFetch(`/snapshot/${id}?format=json`);
+      if (!s.ok) throw new BrightDataError(`Bright Data snapshot ${s.status}`);
+      return parseRecords(await s.text());
+    }
+    if (status === "failed") throw new BrightDataError("Bright Data: lấy hồ sơ thất bại");
+  }
+  throw new BrightDataError(`Bright Data chưa xử lý xong (snapshot ${id}), hãy thử lại sau ít phút`);
+}

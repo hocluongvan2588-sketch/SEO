@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Braces, FolderKanban, Plus, ScanSearch, Search } from "lucide-react";
+import { Braces, FolderKanban, Plus, ScanSearch, Search, UserSearch } from "lucide-react";
 import { setActiveProject } from "@/app/actions/preferences";
 import { cn } from "@/lib/utils";
 import { NAV } from "./nav";
@@ -49,6 +49,7 @@ export function CommandPalette({
       { id: "a-research", label: tp("research"), icon: Search, run: go("/keywords?tab=research") },
       { id: "a-audit", label: tp("audit"), icon: ScanSearch, run: go("/audits") },
       { id: "a-schema", label: tp("schema"), icon: Braces, run: go("/schemas") },
+      { id: "a-leads", label: tp("findBuyers"), icon: UserSearch, run: go("/leads?tab=find") },
       { id: "a-project", label: tp("newProject"), icon: Plus, run: go("/projects?new=1") },
       ...NAV.filter((n) => !n.adminOnly || isAdmin).map((n) => ({ id: `n-${n.href}`, label: t(n.key), hint: tp("goTo"), icon: n.icon, run: go(n.href) })),
       ...projects.map((p) => ({

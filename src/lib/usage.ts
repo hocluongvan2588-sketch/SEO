@@ -81,7 +81,7 @@ export interface MeteredContext {
   supabase: SupabaseClient;
   userId: string;
   projectId?: string | null;
-  feature: "research" | "cluster" | "rankings" | "audit" | "schema";
+  feature: "research" | "cluster" | "rankings" | "audit" | "schema" | "leads";
   /** Dịch vụ thao tác này sẽ dùng — chặn trước nếu đã hết ngân sách */
   providers: ("claude" | "brightdata")[];
 }

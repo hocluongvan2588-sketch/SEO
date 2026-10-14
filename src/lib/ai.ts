@@ -214,3 +214,65 @@ In notes, list properties the staff should complete manually.`,
   }
   return { ...out, json_ld: parsed };
 }
+
+// ---------------------------------------------------------------------------
+// Đánh giá buyer + soạn lời chào kết nối LinkedIn
+// ---------------------------------------------------------------------------
+const LeadQualifySchema = z.object({
+  leads: z.array(
+    z.object({
+      index: z.number().describe("The [n] index of the lead in the input list"),
+      score: z.number().describe("0-100 fit as a buyer/importer/distributor of the product"),
+      reason: z.string().describe("1-2 sentences in the staff language explaining the score"),
+      message: z
+        .string()
+        .describe("Personalised LinkedIn connection note, max 280 characters, no emojis, no links"),
+    }),
+  ),
+});
+
+export interface LeadForAi {
+  name: string | null;
+  headline: string | null;
+  company: string | null;
+  location: string | null;
+  about: string | null;
+  experience: { title?: string; company?: string }[];
+}
+
+export async function qualifyLeads(input: {
+  project: Project;
+  product: string;
+  leads: LeadForAi[];
+  staffLocale: string;
+  messageLanguage: string;
+}) {
+  const { project, product, leads } = input;
+  const out = await structured(
+    LeadQualifySchema,
+    `We are ${project.name} (${project.domain}), a Vietnamese company. ${project.description ?? ""}
+Product we want to sell: ${product}
+Staff language for "reason": ${localeLabel(input.staffLocale)}
+Language for "message": ${localeLabel(input.messageLanguage)}
+
+Below are public LinkedIn profiles of potential buyers. For EACH profile:
+- score 0-100: how likely this person can buy or influence buying ${product} from an overseas supplier (importer, distributor, wholesaler, retail/foodservice purchasing, sourcing, category management score high; unrelated roles score low).
+- reason: why, citing their role/company.
+- message: a short, respectful connection note from our sales staff. Mention something specific from their profile and the product; no hard sell, no invented facts, no prices or certifications we did not state, max 280 characters.
+
+${leads
+  .map(
+    (l, i) => `[${i}] ${l.name ?? "?"} — ${l.headline ?? ""}
+Company: ${l.company ?? "?"} · Location: ${l.location ?? "?"}
+Experience: ${l.experience.map((e) => `${e.title ?? ""} @ ${e.company ?? ""}`).join("; ") || "n/a"}
+About: ${(l.about ?? "").slice(0, 600)}`,
+  )
+  .join("\n\n")}`,
+    "low",
+  );
+  return out.leads.map((l) => ({
+    ...l,
+    score: Math.max(0, Math.min(100, Math.round(l.score))),
+    message: l.message.slice(0, 300),
+  }));
+}

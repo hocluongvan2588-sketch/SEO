@@ -74,6 +74,35 @@ export interface AuditAi {
   fixes: { title: string; detail: string; impact: Priority; effort: Priority }[];
 }
 
+export type LeadStatus = "new" | "connected" | "messaged" | "replied" | "opportunity" | "not_fit";
+
+export interface Lead {
+  id: string;
+  project_id: string;
+  linkedin_url: string;
+  name: string | null;
+  headline: string | null;
+  company: string | null;
+  company_url: string | null;
+  location: string | null;
+  country_code: string | null;
+  about: string | null;
+  experience: { title?: string; company?: string; duration?: string }[];
+  avatar_url: string | null;
+  product: string | null;
+  source: "search" | "manual";
+  search_query: string | null;
+  status: LeadStatus;
+  owner_id: string | null;
+  notes: string | null;
+  ai_score: number | null;
+  ai_reason: string | null;
+  ai_message: string | null;
+  collected_at: string;
+  expires_at: string;
+  created_at: string;
+}
+
 export interface SchemaRecord {
   id: string;
   project_id: string;
