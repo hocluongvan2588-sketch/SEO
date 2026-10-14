@@ -137,7 +137,8 @@
       "navigational": "Điều hướng"
     },
     "allMarkets": "Mọi thị trường",
-    "market": "Thị trường"
+    "market": "Thị trường",
+    "rankSkipped": "{count} từ khóa tạm bỏ qua, thử lại sau 5–10 phút"
   },
   "research": {
     "seedPh": "Nhập từ khóa gốc, ví dụ: phần mềm quản lý kho",
@@ -353,7 +354,9 @@
     "change": "Thay đổi",
     "best": "Tốt nhất",
     "trend": "Xu hướng",
-    "checked": "Lần kiểm tra"
+    "checked": "Lần kiểm tra",
+    "skipped": "{count} từ khóa tạm thời chưa kiểm tra được (Bright Data tạm khóa), thử lại sau 5–10 phút",
+    "allSkipped": "Chưa kiểm tra được từ khóa nào, hãy thử lại sau 5–10 phút"
   },
   "settings": {
     "title": "Cài đặt",

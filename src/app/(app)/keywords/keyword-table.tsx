@@ -232,7 +232,12 @@ export function KeywordTable({
                 "rank",
                 async () => {
                   const r = await checkRankings(project.id, ids);
-                  if (r.ok) toast.info(t("rankResult", { checked: r.data.checked, found: r.data.found }), { description: costLabel(r.data.costUsd) });
+                  if (r.ok)
+                    toast.info(t("rankResult", { checked: r.data.checked, found: r.data.found }), {
+                      description: [r.data.skipped ? t("rankSkipped", { count: r.data.skipped }) : "", costLabel(r.data.costUsd)]
+                        .filter(Boolean)
+                        .join(" · "),
+                    });
                   return r;
                 },
                 t("rankDone"),

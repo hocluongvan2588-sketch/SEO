@@ -23,21 +23,32 @@ export function CheckAllButton({ projectId, ids }: { projectId: string; ids: str
         start(async () => {
           let checked = 0;
           let found = 0;
+          let skipped = 0;
           let cost = 0;
+          let lastError = "";
           const toastId = toast.loading(t("checking", { done: 0, total: ids.length }));
           for (let i = 0; i < ids.length; i += 25) {
-            const res = await checkRankings(projectId, ids.slice(i, i + 25));
+            const batch = ids.slice(i, i + 25);
+            const res = await checkRankings(projectId, batch);
+            // Lô lỗi (vd. Bright Data tạm khóa) → ghi nhận rồi chạy tiếp lô sau
             if (!res.ok) {
-              toast.error(res.error, { id: toastId });
-              router.refresh();
-              return;
+              skipped += batch.length;
+              lastError = res.error;
+            } else {
+              checked += res.data.checked;
+              found += res.data.found;
+              skipped += res.data.skipped;
+              cost += res.data.costUsd;
             }
-            checked += res.data.checked;
-            found += res.data.found;
-            cost += res.data.costUsd;
-            toast.loading(t("checking", { done: checked, total: ids.length }), { id: toastId });
+            toast.loading(t("checking", { done: checked + skipped, total: ids.length }), { id: toastId });
           }
-          toast.success(t("checkedResult", { checked, found }), { id: toastId, description: costLabel(cost) });
+          if (checked === 0) toast.error(lastError || t("allSkipped"), { id: toastId });
+          else if (skipped > 0)
+            toast.warning(t("checkedResult", { checked, found }), {
+              id: toastId,
+              description: [t("skipped", { count: skipped }), costLabel(cost)].filter(Boolean).join(" · "),
+            });
+          else toast.success(t("checkedResult", { checked, found }), { id: toastId, description: costLabel(cost) });
           router.refresh();
         })
       }

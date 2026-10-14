@@ -204,7 +204,7 @@ export async function clusterProjectKeywords(projectId: string, ids?: string[]):
 export async function checkRankings(
   projectId: string,
   ids: string[],
-): Promise<ActionResult<{ checked: number; found: number; costUsd: number }>> {
+): Promise<ActionResult<{ checked: number; found: number; skipped: number; costUsd: number }>> {
   try {
     const { session, project } = await loadProject(projectId);
     const { data: rows, error } = await session.supabase
@@ -212,12 +212,26 @@ export async function checkRankings(
       .select("id, keyword, locale, country, best_position")
       .in("id", ids.slice(0, 25));
     if (error) throw error;
-    const { result: found, costUsd } = await metered(
+    const {
+      result: { found, skipped, lastError },
+      costUsd,
+    } = await metered(
       { supabase: session.supabase, userId: session.user.id, projectId, feature: "rankings", providers: ["brightdata"] },
       async () => {
         let found = 0;
+        let skipped = 0;
+        let lastError = "";
         for (const row of rows ?? []) {
-          const { position, url } = await findRank(row.keyword, project.domain, { hl: row.locale, gl: row.country || project.country });
+          // Một từ khóa lỗi (vd. Bright Data tạm khóa câu đó) không làm hỏng cả lượt — bỏ qua, giữ thứ hạng cũ
+          let rank: { position: number | null; url: string | null };
+          try {
+            rank = await findRank(row.keyword, project.domain, { hl: row.locale, gl: row.country || project.country });
+          } catch (err) {
+            skipped++;
+            lastError = err instanceof Error ? err.message : String(err);
+            continue;
+          }
+          const { position, url } = rank;
           if (position) found++;
           const now = new Date().toISOString();
           await session.supabase.from("rank_checks").insert({ keyword_id: row.id, position, url, checked_at: now });
@@ -232,12 +246,14 @@ export async function checkRankings(
             })
             .eq("id", row.id);
         }
-        return found;
+        return { found, skipped, lastError };
       },
     );
+    const total = rows?.length ?? 0;
+    if (total > 0 && skipped === total) throw new Error(lastError);
     revalidatePath("/keywords");
     revalidatePath("/rankings");
-    return { ok: true, data: { checked: rows?.length ?? 0, found, costUsd } };
+    return { ok: true, data: { checked: total - skipped, found, skipped, costUsd } };
   } catch (e) {
     return fail(e);
   }

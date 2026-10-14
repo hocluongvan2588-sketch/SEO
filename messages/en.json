@@ -137,7 +137,8 @@
       "navigational": "Navigational"
     },
     "allMarkets": "All markets",
-    "market": "Market"
+    "market": "Market",
+    "rankSkipped": "{count} keywords skipped for now — retry in 5–10 minutes"
   },
   "research": {
     "seedPh": "Enter a seed keyword, e.g. warehouse management software",
@@ -353,7 +354,9 @@
     "change": "Change",
     "best": "Best",
     "trend": "Trend",
-    "checked": "Last checked"
+    "checked": "Last checked",
+    "skipped": "{count} keywords could not be checked right now (Bright Data cooldown) — retry in 5–10 minutes",
+    "allSkipped": "No keywords could be checked — retry in 5–10 minutes"
   },
   "settings": {
     "title": "Settings",

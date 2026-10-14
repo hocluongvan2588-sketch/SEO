@@ -45,6 +45,8 @@ async function request(zone: string, url: string, opts: RequestOptions = {}): Pr
         signal: AbortSignal.timeout(60_000),
       });
       const body = await res.text();
+      // Bright Data tạm khóa một câu vừa thất bại — thử lại ngay (kể cả đổi định dạng) đều vô ích
+      if (/recently failed and cannot be attempted/i.test(body)) throw new SerpCooldownError();
       const timedOut = /^\s*timeout\s*$/i.test(body);
       const empty = !body.trim();
       if (res.ok && !timedOut && !empty) {
@@ -55,11 +57,19 @@ async function request(zone: string, url: string, opts: RequestOptions = {}): Pr
       lastError = `Bright Data ${res.status}: ${empty ? "phản hồi rỗng" : body.slice(0, 200)}${reason ? ` — ${reason}` : ""}`;
       if (!RETRYABLE.has(res.status) && !timedOut && !empty) break;
     } catch (err) {
+      if (err instanceof SerpCooldownError) throw err;
       lastError = err instanceof Error ? err.message : String(err);
     }
     if (attempt < attempts) await new Promise((r) => setTimeout(r, attempt * 2000));
   }
   throw new BrightDataError(`${lastError} (zone: ${zone})`);
+}
+
+/** Câu tìm kiếm vừa thất bại nên Bright Data tạm khóa — không tính phí, thử lại sau vài phút */
+export class SerpCooldownError extends BrightDataError {
+  constructor() {
+    super("Bright Data tạm khóa câu tìm kiếm này vì vừa thất bại ít phút trước — hãy thử lại sau 5–10 phút");
+  }
 }
 
 export interface SerpOrganic {
@@ -144,6 +154,7 @@ export async function googleSearch(
       if (data) break;
       problems.push(`không đọc được kết quả: ${body.slice(0, 80)}`);
     } catch (err) {
+      if (err instanceof SerpCooldownError) throw err;
       problems.push(err instanceof Error ? err.message : String(err));
     }
   }
