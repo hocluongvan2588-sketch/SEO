@@ -3,13 +3,13 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { CheckCircle2, FolderKanban, Globe2, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowRight, Briefcase, CheckCircle2, ExternalLink, FolderKanban, Globe2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteProject, saveProject, type ProjectInput } from "@/app/actions/projects";
 import { setActiveProject } from "@/app/actions/preferences";
 import { Badge, Button, Card, EmptyState, Field, Input, Select, Textarea } from "@/components/ui";
 import { Modal } from "@/components/ui/modal";
-import { CONTENT_LOCALES, flag, languageName } from "@/lib/locales";
+import { CONTENT_LOCALES, countryName, flag, languageName } from "@/lib/locales";
 import { CountryMultiSelect, CountrySelect } from "@/components/ui/country-picker";
 import type { Project } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -33,6 +33,14 @@ export function ProjectsView({
   const [editing, setEditing] = useState<Project | "new" | null>(openNew ? "new" : null);
   const [, start] = useTransition();
 
+  /** Bấm vào thẻ: chọn dự án và mở trang Tổng quan của dự án đó */
+  const openProject = (p: Project) =>
+    start(async () => {
+      if (p.id !== activeId) await setActiveProject(p.id);
+      router.push("/");
+      router.refresh();
+    });
+
   return (
     <>
       {canWrite && (
@@ -51,24 +59,50 @@ export function ProjectsView({
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {projects.map((p) => (
-            <Card key={p.id} className={cn("flex flex-col p-5", p.id === activeId && "border-primary ring-2 ring-primary/15")}>
+            <Card
+              key={p.id}
+              role="link"
+              tabIndex={0}
+              title={t("open")}
+              onClick={() => openProject(p)}
+              onKeyDown={(e) => {
+                if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+                  e.preventDefault();
+                  openProject(p);
+                }
+              }}
+              className={cn(
+                "group flex min-w-0 cursor-pointer flex-col p-5 transition-all hover:border-primary hover:shadow-md focus-visible:outline-2 focus-visible:outline-primary",
+                p.id === activeId && "border-primary ring-2 ring-primary/15",
+              )}
+            >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <h3 className="truncate font-semibold text-text">{p.name}</h3>
-                  <a href={`https://${p.domain}`} target="_blank" rel="noreferrer" className="text-sm text-primary hover:underline">
-                    {p.domain}
+                  <h3 className="flex items-center gap-1 font-semibold text-text">
+                    <span className="truncate">{p.name}</span>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-primary opacity-0 transition-opacity group-hover:opacity-100" />
+                  </h3>
+                  <a
+                    href={`https://${p.domain}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex max-w-full items-center gap-1 text-sm text-primary hover:underline"
+                  >
+                    <span className="truncate">{p.domain}</span>
+                    <ExternalLink className="h-3 w-3 shrink-0" />
                   </a>
                 </div>
                 {p.id === activeId && (
-                  <Badge tone="primary">
+                  <Badge tone="primary" className="shrink-0">
                     <CheckCircle2 className="h-3 w-3" />
                     {t("active")}
                   </Badge>
                 )}
               </div>
               {p.description && <p className="mt-2 line-clamp-2 text-sm text-muted">{p.description}</p>}
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                <Badge title={t("markets")}>
+              <div className="mt-3 flex min-w-0 flex-wrap gap-1.5">
+                <Badge title={(p.markets?.length ? p.markets : [p.country]).map((m) => countryName(m, ui)).join(", ")}>
                   <Globe2 className="h-3 w-3" />
                   {(p.markets?.length ? p.markets : [p.country]).map((m) => flag(m)).join(" ")}
                 </Badge>
@@ -77,24 +111,14 @@ export function ProjectsView({
                     {languageName(l, ui)}
                   </Badge>
                 ))}
-                {p.industry && <Badge>{p.industry}</Badge>}
               </div>
-              <div className="mt-auto flex gap-2 pt-4">
-                {p.id !== activeId && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() =>
-                      start(async () => {
-                        await setActiveProject(p.id);
-                        router.refresh();
-                        toast.success(t("switched", { name: p.name }));
-                      })
-                    }
-                  >
-                    {t("select")}
-                  </Button>
-                )}
+              {p.industry && (
+                <p className="mt-2 line-clamp-2 text-xs text-muted" title={p.industry}>
+                  <Briefcase className="mr-1 inline h-3 w-3 align-[-2px]" />
+                  {p.industry}
+                </p>
+              )}
+              <div className="mt-auto flex gap-2 pt-4" onClick={(e) => e.stopPropagation()}>
                 {canWrite && (
                   <Button size="sm" variant="ghost" onClick={() => setEditing(p)}>
                     <Pencil className="h-3.5 w-3.5" />
@@ -106,6 +130,7 @@ export function ProjectsView({
                     size="sm"
                     variant="ghost"
                     className="ml-auto text-danger hover:text-danger"
+                    title={t("delete")}
                     onClick={() => {
                       if (!confirm(t("confirmDelete", { name: p.name }))) return;
                       start(async () => {

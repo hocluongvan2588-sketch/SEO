@@ -183,7 +183,9 @@
     "saved": "Đã lưu dự án",
     "markets": "Thị trường mục tiêu",
     "marketsHint": "Các quốc gia muốn lên top Google — dùng cho nghiên cứu từ khóa và theo dõi thứ hạng theo từng nước",
-    "searchLanguage": "Tìm ngôn ngữ…"
+    "searchLanguage": "Tìm ngôn ngữ…",
+    "open": "Mở trang tổng quan của dự án",
+    "delete": "Xóa dự án"
   },
   "audits": {
     "title": "Audit SEO",

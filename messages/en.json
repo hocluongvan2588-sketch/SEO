@@ -183,7 +183,9 @@
     "saved": "Project saved",
     "markets": "Target markets",
     "marketsHint": "Countries where you want to rank — used for keyword research and per-country rank tracking",
-    "searchLanguage": "Search languages…"
+    "searchLanguage": "Search languages…",
+    "open": "Open project overview",
+    "delete": "Delete project"
   },
   "audits": {
     "title": "SEO audit",

@@ -274,7 +274,7 @@ export function ResearchPanel({
                       <div className="mb-2 text-sm font-medium text-text">{t("paa")}</div>
                       <div className="mb-4 flex flex-wrap gap-1.5">
                         {result.serp.peopleAlsoAsk.map((q) => (
-                          <Badge key={q}>{q}</Badge>
+                          <Badge key={q} className="whitespace-normal">{q}</Badge>
                         ))}
                       </div>
                     </>
