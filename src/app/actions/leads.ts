@@ -89,12 +89,19 @@ export async function collectLeads(input: {
   searchQuery?: string;
   withAi: boolean;
   messageLanguage: string;
+  /** Dòng tiêu đề từ kết quả Google ("Chức danh · Công ty") theo URL — bù khi Bright Data thiếu */
+  hints?: Record<string, string>;
 }): Promise<ActionResult<{ saved: number; failed: number; costUsd: number }>> {
   try {
     const { session, project } = await loadProject(input.projectId);
     const urls = Array.from(new Set(input.urls.map(normalizeLinkedInUrl).filter((u): u is string => Boolean(u)))).slice(0, 20);
     if (!urls.length) throw new Error("Không có link hồ sơ LinkedIn hợp lệ (dạng linkedin.com/in/...)");
     const lang = await staffLocale();
+    const hints = new Map(
+      Object.entries(input.hints ?? {})
+        .map(([u, h]) => [normalizeLinkedInUrl(u), h.split(" · ").map((x) => x.trim()).filter(Boolean)] as const)
+        .filter((e): e is [string, string[]] => Boolean(e[0]) && e[1].length > 0),
+    );
 
     const { result, costUsd } = await metered(
       {
@@ -105,7 +112,17 @@ export async function collectLeads(input: {
         providers: input.withAi ? ["brightdata", "claude"] : ["brightdata"],
       },
       async () => {
-        const profiles = (await scrapeLinkedInProfiles(urls)).filter((p) => !p.error && p.name);
+        const profiles = (await scrapeLinkedInProfiles(urls))
+          .filter((p) => !p.error && p.name)
+          .map((p) => {
+            const h = hints.get(p.url);
+            if (!h) return p;
+            return {
+              ...p,
+              headline: p.headline ?? h[0] ?? null,
+              company: p.company ?? (h.length > 1 ? h[h.length - 1] : null),
+            };
+          });
         const ai =
           input.withAi && profiles.length
             ? await qualifyLeads({ project, product: input.product, leads: profiles, staffLocale: lang, messageLanguage: input.messageLanguage })

@@ -512,6 +512,8 @@
     "about": "Giới thiệu",
     "collectedOn": "Thu thập {date}",
     "expiresOn": "tự xóa {date}",
-    "deleteOnRequest": "Xóa (theo yêu cầu)"
+    "deleteOnRequest": "Xóa (theo yêu cầu)",
+    "sortScore": "Điểm AI cao nhất",
+    "sortNewest": "Mới thêm gần đây"
   }
 }

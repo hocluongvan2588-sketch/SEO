@@ -512,6 +512,8 @@
     "about": "About",
     "collectedOn": "Collected {date}",
     "expiresOn": "auto-deletes {date}",
-    "deleteOnRequest": "Delete (on request)"
+    "deleteOnRequest": "Delete (on request)",
+    "sortScore": "Highest AI score",
+    "sortNewest": "Recently added"
   }
 }

@@ -47,6 +47,7 @@ export function LeadTable({
   const [status, setStatus] = useState("");
   const [score, setScore] = useState("");
   const [owner, setOwner] = useState("");
+  const [sort, setSort] = useState<"score" | "newest">("score");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [openId, setOpenId] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -55,7 +56,12 @@ export function LeadTable({
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
-    return leads.filter(
+    // Mặc định: điểm AI cao nhất lên đầu để nhân viên chào người phù hợp trước
+    const ordered =
+      sort === "score"
+        ? [...leads].sort((a, b) => (b.ai_score ?? -1) - (a.ai_score ?? -1) || b.created_at.localeCompare(a.created_at))
+        : leads;
+    return ordered.filter(
       (l) =>
         (!query || `${l.name} ${l.headline} ${l.company} ${l.location}`.toLowerCase().includes(query)) &&
         (!status || l.status === status) &&
@@ -65,7 +71,7 @@ export function LeadTable({
           (score === "mid" && (l.ai_score ?? -1) >= 40 && (l.ai_score ?? -1) < 70) ||
           (score === "low" && l.ai_score != null && l.ai_score < 40)),
     );
-  }, [leads, q, status, owner, score, currentUserId]);
+  }, [leads, q, status, owner, score, sort, currentUserId]);
 
   const ids = [...selected];
   const allSelected = filtered.length > 0 && filtered.every((l) => selected.has(l.id));
@@ -140,6 +146,10 @@ export function LeadTable({
             <option value="high">{t("scoreHigh")}</option>
             <option value="mid">{t("scoreMid")}</option>
             <option value="low">{t("scoreLow")}</option>
+          </Select>
+          <Select value={sort} onChange={(e) => setSort(e.target.value as "score" | "newest")} className="sm:w-auto">
+            <option value="score">{t("sortScore")}</option>
+            <option value="newest">{t("sortNewest")}</option>
           </Select>
           <Select value={owner} onChange={(e) => setOwner(e.target.value)} className="sm:w-auto">
             <option value="">{t("allOwners")}</option>

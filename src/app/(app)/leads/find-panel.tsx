@@ -77,6 +77,10 @@ export function FindPanel({ project, canWrite, onSaved }: { project: Project; ca
         searchQuery: mode === "search" ? result?.query : undefined,
         withAi,
         messageLanguage,
+        hints:
+          mode === "search" && result
+            ? Object.fromEntries(result.candidates.filter((c) => selected.has(c.url) && c.headline).map((c) => [c.url, c.headline]))
+            : undefined,
       });
       if (!res.ok) return void toast.error(t("collectFailed"), { description: res.error });
       toast.success(t("collected", { saved: res.data.saved, failed: res.data.failed }), { description: costLabel(res.data.costUsd) });

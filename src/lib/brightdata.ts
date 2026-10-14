@@ -306,25 +306,42 @@ const LINKEDIN_PROFILE_DATASET = process.env.BRIGHTDATA_LINKEDIN_DATASET || "gd_
 
 const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
 
+/** Giá trị chuỗi đầu tiên có nội dung */
+const first = (...vals: unknown[]) => {
+  for (const v of vals) {
+    const s = str(v);
+    if (s) return s;
+  }
+  return null;
+};
+
+/** Một mục kinh nghiệm; công ty có nhiều vị trí thì lấy vị trí mới nhất trong `positions` */
+function mapExperience(e: Record<string, unknown>) {
+  const inner = Array.isArray(e.positions) ? ((e.positions as Record<string, unknown>[])[0] ?? {}) : {};
+  const start = first(inner.start_date, e.start_date);
+  return {
+    title: first(e.title, inner.title, e.position) ?? undefined,
+    company: first(e.company, e.company_name, e.subtitle, e.name) ?? undefined,
+    duration: first(e.duration, inner.duration) ?? (start ? `${start} – ${first(inner.end_date, e.end_date) ?? "now"}` : undefined),
+  };
+}
+
 function mapProfile(r: Record<string, unknown>, fallbackUrl: string): LinkedInProfile {
   const cc = (r.current_company ?? {}) as Record<string, unknown>;
-  const exp = Array.isArray(r.experience) ? (r.experience as Record<string, unknown>[]) : [];
+  const exp = Array.isArray(r.experience) ? (r.experience as Record<string, unknown>[]).map(mapExperience) : [];
   const input = (r.input ?? {}) as Record<string, unknown>;
   const firstName = str(r.first_name);
   return {
     url: normalizeLinkedInUrl(String(r.input_url ?? input.url ?? r.url ?? fallbackUrl)) ?? fallbackUrl,
     name: str(r.name) ?? (firstName ? `${firstName} ${str(r.last_name) ?? ""}`.trim() : null),
-    headline: str(r.position) ?? str(r.headline),
-    company: str(cc.name) ?? str(r.current_company_name),
-    companyUrl: str(cc.link) ?? str(cc.url),
-    location: str(r.city) ?? str(r.location),
+    // Tên trường khác nhau giữa các phiên bản dataset → thử lần lượt, cuối cùng là kinh nghiệm gần nhất
+    headline: first(r.position, r.headline, r.title, r.job_title, cc.title, cc.position, exp[0]?.title),
+    company: first(cc.name, r.current_company_name, r.company, r.company_name, exp[0]?.company),
+    companyUrl: first(cc.link, cc.url),
+    location: first(r.city, r.location),
     countryCode: str(r.country_code)?.toLowerCase() ?? null,
     about: str(r.about)?.slice(0, 2000) ?? null,
-    experience: exp.slice(0, 4).map((e) => ({
-      title: str(e.title) ?? undefined,
-      company: str(e.company) ?? undefined,
-      duration: str(e.duration) ?? (str(e.start_date) ? `${e.start_date} – ${str(e.end_date) ?? "now"}` : undefined),
-    })),
+    experience: exp.slice(0, 4),
     avatarUrl: str(r.avatar) ?? str(r.image_url),
     error: str(r.error) ?? str(r.error_code) ?? undefined,
   };
@@ -379,7 +396,10 @@ export async function scrapeLinkedInProfiles(urls: string[]): Promise<LinkedInPr
   }
 
   recordBrightData(records.length);
-  return (records as Record<string, unknown>[]).map((r, i) => mapProfile(r, input[i]?.url ?? ""));
+  const list = records as Record<string, unknown>[];
+  // Ghi lại tên trường để đối chiếu khi Bright Data đổi cấu trúc dữ liệu
+  if (list[0]) console.info("[brightdata] linkedin profile fields:", Object.keys(list[0]).join(","));
+  return list.map((r, i) => mapProfile(r, input[i]?.url ?? ""));
 }
 
 async function waitForSnapshot(id: string): Promise<unknown[]> {
