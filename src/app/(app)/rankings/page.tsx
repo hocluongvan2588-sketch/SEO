@@ -4,6 +4,8 @@ import { NoProject } from "@/components/no-project";
 import { PositionBadge } from "@/components/keyword-bits";
 import { Card, EmptyState, PageHeader } from "@/components/ui";
 import { getWorkspace } from "@/lib/context";
+import { countryName, flag } from "@/lib/locales";
+import { getLocale } from "next-intl/server";
 import { CheckAllButton } from "./check-all";
 
 export const maxDuration = 300;
@@ -12,11 +14,12 @@ export default async function RankingsPage() {
   const { supabase, active, profile } = await getWorkspace();
   const t = await getTranslations("rankings");
   const format = await getFormatter();
+  const ui = await getLocale();
   if (!active) return <NoProject />;
 
   const { data: keywords } = await supabase
     .from("keywords")
-    .select("id, keyword, locale, current_position, best_position, last_checked_at, target_url, status")
+    .select("id, keyword, locale, country, current_position, best_position, last_checked_at, target_url, status")
     .eq("project_id", active.id)
     .neq("status", "ignored")
     .order("current_position", { ascending: true, nullsFirst: false })
@@ -86,6 +89,9 @@ export default async function RankingsPage() {
                     <tr key={k.id} className="hover:bg-surface-2/50">
                       <td className="px-5 py-2.5">
                         <div className="font-medium text-text">{k.keyword}</div>
+                        <div className="text-xs text-muted">
+                          {flag(k.country)} {countryName(k.country, ui)} · {k.locale}
+                        </div>
                         {k.target_url && <div className="max-w-xs truncate text-xs text-muted">{k.target_url}</div>}
                       </td>
                       <td className="px-3 py-2.5">

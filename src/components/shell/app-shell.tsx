@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Check, ChevronsUpDown, Command, Globe, LogOut, Menu, Moon, Plus, Sparkles, Sun, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronsUpDown, Command, Globe, LogOut, Menu, Moon, Plus, Sparkles, Sun, X } from "lucide-react";
 import { setActiveProject, setUiLocale } from "@/app/actions/preferences";
 import { signOut } from "@/app/actions/auth";
 import { Kbd } from "@/components/ui";
@@ -16,10 +16,12 @@ interface ShellProps {
   user: { email: string; name: string; role: string };
   projects: { id: string; name: string; domain: string }[];
   activeProjectId: string | null;
+  profileMissing?: boolean;
+  userId?: string;
   children: React.ReactNode;
 }
 
-export function AppShell({ user, projects, activeProjectId, children }: ShellProps) {
+export function AppShell({ user, projects, activeProjectId, profileMissing, userId, children }: ShellProps) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -134,7 +136,18 @@ export function AppShell({ user, projects, activeProjectId, children }: ShellPro
             <ThemeToggle />
           </div>
         </header>
-        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:py-8">{children}</main>
+        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:py-8">
+          {profileMissing && (
+            <div className="mb-6 flex gap-3 rounded-xl border border-warning/40 bg-warning-soft px-4 py-3 text-sm text-text">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+              <div>
+                <div className="font-medium">{t("profileMissingTitle")}</div>
+                <div className="mt-0.5 text-muted">{t("profileMissingDesc", { email: user.email, id: userId ?? "" })}</div>
+              </div>
+            </div>
+          )}
+          {children}
+        </main>
       </div>
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} projects={projects} />

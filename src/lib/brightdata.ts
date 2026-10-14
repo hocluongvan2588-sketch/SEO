@@ -52,7 +52,8 @@ export async function googleSearch(
   const { serpZone } = config();
   const params = new URLSearchParams({ q: query, hl: opts.hl, gl: opts.gl, brd_json: "1" });
   if (opts.start) params.set("start", String(opts.start));
-  const res = await request(serpZone, `https://www.google.com/search?${params}`);
+  // Đi qua proxy đặt tại chính quốc gia mục tiêu để kết quả giống người dùng ở đó
+  const res = await request(serpZone, `https://www.google.com/search?${params}`, opts.gl);
   const data = (await res.json()) as Record<string, unknown>;
 
   const organic = Array.isArray(data.organic) ? (data.organic as Record<string, unknown>[]) : [];

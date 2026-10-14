@@ -2,7 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getSession } from "./supabase/server";
-import type { Profile, Project } from "./types";
+import type { Project } from "./types";
 
 export const PROJECT_COOKIE = "project_id";
 
@@ -16,7 +16,7 @@ export async function getWorkspace() {
   const store = await cookies();
   const wanted = store.get(PROJECT_COOKIE)?.value;
   const active = list.find((p) => p.id === wanted) ?? list[0] ?? null;
-  return { supabase, user, profile: session.profile as Profile | null, projects: list, active };
+  return { supabase, user, profile: session.profile, projects: list, active };
 }
 
 export type ActionResult<T = undefined> = { ok: true; data: T } | { ok: false; error: string };

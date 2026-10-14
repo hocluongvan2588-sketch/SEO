@@ -2,14 +2,15 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { CheckCircle2, FolderKanban, Globe2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteProject, saveProject, type ProjectInput } from "@/app/actions/projects";
 import { setActiveProject } from "@/app/actions/preferences";
 import { Badge, Button, Card, EmptyState, Field, Input, Select, Textarea } from "@/components/ui";
 import { Modal } from "@/components/ui/modal";
-import { CONTENT_LOCALES, COUNTRIES, localeLabel } from "@/lib/locales";
+import { CONTENT_LOCALES, flag, languageName } from "@/lib/locales";
+import { CountryMultiSelect, CountrySelect } from "@/components/ui/country-picker";
 import type { Project } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +28,7 @@ export function ProjectsView({
   isAdmin: boolean;
 }) {
   const t = useTranslations("projects");
+  const ui = useLocale();
   const router = useRouter();
   const [editing, setEditing] = useState<Project | "new" | null>(openNew ? "new" : null);
   const [, start] = useTransition();
@@ -66,13 +68,13 @@ export function ProjectsView({
               </div>
               {p.description && <p className="mt-2 line-clamp-2 text-sm text-muted">{p.description}</p>}
               <div className="mt-3 flex flex-wrap gap-1.5">
-                <Badge>
+                <Badge title={t("markets")}>
                   <Globe2 className="h-3 w-3" />
-                  {p.country.toUpperCase()}
+                  {(p.markets?.length ? p.markets : [p.country]).map((m) => flag(m)).join(" ")}
                 </Badge>
                 {p.locales.map((l) => (
                   <Badge key={l} tone={l === p.default_locale ? "info" : "neutral"}>
-                    {localeLabel(l)}
+                    {languageName(l, ui)}
                   </Badge>
                 ))}
                 {p.industry && <Badge>{p.industry}</Badge>}
@@ -140,7 +142,9 @@ export function ProjectsView({
 
 function ProjectForm({ project, onDone }: { project: Project | null; onDone: () => void }) {
   const t = useTranslations("projects");
+  const ui = useLocale();
   const [pending, start] = useTransition();
+  const [langQuery, setLangQuery] = useState("");
   const [form, setForm] = useState<ProjectInput>({
     name: project?.name ?? "",
     domain: project?.domain ?? "",
@@ -149,6 +153,7 @@ function ProjectForm({ project, onDone }: { project: Project | null; onDone: () 
     default_locale: project?.default_locale ?? "vi",
     locales: project?.locales ?? ["vi"],
     country: project?.country ?? "vn",
+    markets: project?.markets?.length ? project.markets : [project?.country ?? "vn"],
   });
   const set = <K extends keyof ProjectInput>(k: K, v: ProjectInput[K]) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -156,6 +161,11 @@ function ProjectForm({ project, onDone }: { project: Project | null; onDone: () 
     if (code === form.default_locale) return;
     set("locales", form.locales.includes(code) ? form.locales.filter((l) => l !== code) : [...form.locales, code]);
   };
+
+  const languages = CONTENT_LOCALES.map((l) => ({ code: l.code, name: languageName(l.code, ui) }));
+  const shownLanguages = languages.filter(
+    (l) => form.locales.includes(l.code) || !langQuery || l.name.toLowerCase().includes(langQuery.toLowerCase()) || l.code.toLowerCase().includes(langQuery.toLowerCase()),
+  );
 
   return (
     <form
@@ -193,26 +203,28 @@ function ProjectForm({ project, onDone }: { project: Project | null; onDone: () 
               setForm((f) => ({ ...f, default_locale: v, locales: Array.from(new Set([v, ...f.locales])) }));
             }}
           >
-            {CONTENT_LOCALES.map((l) => (
+            {languages.map((l) => (
               <option key={l.code} value={l.code}>
-                {l.label}
+                {l.name}
               </option>
             ))}
           </Select>
         </Field>
         <Field label={t("country")}>
-          <Select value={form.country} onChange={(e) => set("country", e.target.value)}>
-            {COUNTRIES.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.label}
-              </option>
-            ))}
-          </Select>
+          <CountrySelect
+            value={form.country}
+            pinned={form.markets}
+            onChange={(c) => setForm((f) => ({ ...f, country: c, markets: Array.from(new Set([c, ...f.markets])) }))}
+          />
         </Field>
       </div>
+      <Field label={t("markets")} hint={t("marketsHint")}>
+        <CountryMultiSelect value={form.markets} locked={[form.country]} onChange={(m) => set("markets", m)} />
+      </Field>
       <Field label={t("locales")} hint={t("localesHint")}>
-        <div className="flex flex-wrap gap-2">
-          {CONTENT_LOCALES.map((l) => {
+        <Input className="mb-2 h-9" placeholder={t("searchLanguage")} value={langQuery} onChange={(e) => setLangQuery(e.target.value)} />
+        <div className="flex max-h-40 flex-wrap gap-2 overflow-y-auto">
+          {shownLanguages.map((l) => {
             const on = form.locales.includes(l.code);
             return (
               <button
@@ -225,7 +237,7 @@ function ProjectForm({ project, onDone }: { project: Project | null; onDone: () 
                   l.code === form.default_locale && "cursor-default",
                 )}
               >
-                {l.label}
+                {l.name}
               </button>
             );
           })}

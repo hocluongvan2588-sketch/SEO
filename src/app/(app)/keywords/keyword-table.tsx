@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { BarChart3, Download, Layers, Plus, Search, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -16,7 +16,8 @@ import {
 import { DifficultyBar, IntentBadge, PositionBadge, PriorityBadge } from "@/components/keyword-bits";
 import { Button, Card, EmptyState, Field, Input, Select, Textarea } from "@/components/ui";
 import { Modal } from "@/components/ui/modal";
-import { localeLabel } from "@/lib/locales";
+import { countryName, flag, languageName } from "@/lib/locales";
+import { CountrySelect } from "@/components/ui/country-picker";
 import type { Keyword, KeywordStatus, Project } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -34,8 +35,10 @@ export function KeywordTable({
   onResearch: () => void;
 }) {
   const t = useTranslations("keywords");
+  const ui = useLocale();
   const router = useRouter();
   const [q, setQ] = useState("");
+  const [market, setMarket] = useState("");
   const [status, setStatus] = useState("");
   const [locale, setLocale] = useState("");
   const [priority, setPriority] = useState("");
@@ -46,6 +49,7 @@ export function KeywordTable({
   const [addOpen, setAddOpen] = useState(false);
   const [, start] = useTransition();
 
+  const marketsInUse = useMemo(() => Array.from(new Set(keywords.map((k) => k.country).filter(Boolean))), [keywords]);
   const clusters = useMemo(() => Array.from(new Set(keywords.map((k) => k.cluster).filter(Boolean))) as string[], [keywords]);
 
   const filtered = useMemo(
@@ -55,10 +59,11 @@ export function KeywordTable({
           (!q || k.keyword.includes(q.toLowerCase())) &&
           (!status || k.status === status) &&
           (!locale || k.locale === locale) &&
+          (!market || k.country === market) &&
           (!priority || k.priority === priority) &&
           (!cluster || k.cluster === cluster),
       ),
-    [keywords, q, status, locale, priority, cluster],
+    [keywords, q, status, locale, market, priority, cluster],
   );
 
   const groups = useMemo(() => {
@@ -88,9 +93,9 @@ export function KeywordTable({
 
   const exportCsv = () => {
     const rows = filtered.length ? filtered : keywords;
-    const head = ["keyword", "locale", "intent", "difficulty", "priority", "cluster", "content_type", "status", "position", "target_url"];
+    const head = ["keyword", "locale", "country", "intent", "difficulty", "priority", "cluster", "content_type", "status", "position", "target_url"];
     const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const csv = [head.join(","), ...rows.map((k) => [k.keyword, k.locale, k.intent, k.difficulty, k.priority, k.cluster, k.content_type, k.status, k.current_position, k.target_url].map(esc).join(","))].join("\n");
+    const csv = [head.join(","), ...rows.map((k) => [k.keyword, k.locale, k.country, k.intent, k.difficulty, k.priority, k.cluster, k.content_type, k.status, k.current_position, k.target_url].map(esc).join(","))].join("\n");
     const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -128,8 +133,8 @@ export function KeywordTable({
   return (
     <Card>
       {/* Toolbar */}
-      <div className="flex flex-col gap-3 border-b border-border p-4 xl:flex-row xl:items-center">
-        <div className="relative flex-1">
+      <div className="flex flex-col gap-3 border-b border-border p-4 xl:flex-row xl:flex-wrap xl:items-center">
+        <div className="relative min-w-64 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
           <Input className="pl-9" placeholder={t("searchPh")} value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
@@ -150,12 +155,22 @@ export function KeywordTable({
               </option>
             ))}
           </Select>
+          {marketsInUse.length > 1 && (
+            <Select value={market} onChange={(e) => setMarket(e.target.value)} className="sm:w-auto">
+              <option value="">{t("allMarkets")}</option>
+              {marketsInUse.map((m) => (
+                <option key={m} value={m}>
+                  {flag(m)} {countryName(m, ui)}
+                </option>
+              ))}
+            </Select>
+          )}
           {project.locales.length > 1 && (
             <Select value={locale} onChange={(e) => setLocale(e.target.value)} className="sm:w-auto">
               <option value="">{t("allLocales")}</option>
               {project.locales.map((l) => (
                 <option key={l} value={l}>
-                  {localeLabel(l)}
+                  {languageName(l, ui)}
                 </option>
               ))}
             </Select>
@@ -291,7 +306,9 @@ export function KeywordTable({
                   <td className="px-3 py-2.5">
                     <div className="font-medium text-text">{k.keyword}</div>
                     <div className="mt-0.5 flex items-center gap-2 text-xs text-muted">
-                      {project.locales.length > 1 && <span className="uppercase">{k.locale}</span>}
+                      <span title={countryName(k.country, ui)}>
+                        {flag(k.country)} {k.locale}
+                      </span>
                       {k.cluster && !groupByCluster && <span>· {k.cluster}</span>}
                       {k.target_url && (
                         <a href={k.target_url} target="_blank" rel="noreferrer" className="truncate text-primary hover:underline">
@@ -351,7 +368,9 @@ function AddModal({ open, onClose, project }: { open: boolean; onClose: () => vo
   const t = useTranslations("keywords");
   const router = useRouter();
   const [text, setText] = useState("");
+  const ui = useLocale();
   const [locale, setLocale] = useState(project.default_locale);
+  const [country, setCountry] = useState(project.country);
   const [pending, start] = useTransition();
   return (
     <Modal open={open} onClose={onClose} title={t("addManual")}>
@@ -360,7 +379,7 @@ function AddModal({ open, onClose, project }: { open: boolean; onClose: () => vo
         onSubmit={(e) => {
           e.preventDefault();
           start(async () => {
-            const res = await addKeywordsManually({ projectId: project.id, locale, keywords: text.split(/\n|,/) });
+            const res = await addKeywordsManually({ projectId: project.id, locale, country, keywords: text.split(/\n|,/) });
             if (!res.ok) return void toast.error(res.error);
             toast.success(t("added", { count: res.data.count }));
             setText("");
@@ -376,10 +395,13 @@ function AddModal({ open, onClose, project }: { open: boolean; onClose: () => vo
           <Select value={locale} onChange={(e) => setLocale(e.target.value)}>
             {project.locales.map((l) => (
               <option key={l} value={l}>
-                {localeLabel(l)}
+                {languageName(l, ui)}
               </option>
             ))}
           </Select>
+        </Field>
+        <Field label={t("market")}>
+          <CountrySelect value={country} onChange={setCountry} pinned={project.markets ?? [project.country]} />
         </Field>
         <div className="flex justify-end">
           <Button type="submit" loading={pending}>

@@ -1,6 +1,7 @@
 import "server-only";
 import * as cheerio from "cheerio";
 import type { AuditCheck } from "./types";
+import { baseLang } from "./locales";
 
 export interface PageData {
   url: string;
@@ -106,7 +107,7 @@ export function parsePage(url: string, html: string, status: number): PageData {
   };
 }
 
-export function runChecks(page: PageData, opts: { projectLocales: string[] }): AuditCheck[] {
+export function runChecks(page: PageData, opts: { projectLocales: string[]; projectMarkets?: string[] }): AuditCheck[] {
   const checks: AuditCheck[] = [];
   const add = (c: AuditCheck) => checks.push(c);
 
@@ -200,15 +201,23 @@ export function runChecks(page: PageData, opts: { projectLocales: string[] }): A
 
   // International (đa ngôn ngữ)
   add({ id: page.lang ? "lang_ok" : "lang_missing", category: "international", severity: page.lang ? "pass" : "warning", value: page.lang ?? undefined });
-  if (opts.projectLocales.length > 1) {
+  const markets = opts.projectMarkets ?? [];
+  if (opts.projectLocales.length > 1 || markets.length > 1) {
     if (page.hreflang.length === 0) add({ id: "hreflang_missing", category: "international", severity: "warning" });
     else {
-      const langs = page.hreflang.map((h) => h.lang.toLowerCase().split("-")[0]);
-      const missing = opts.projectLocales.filter((l) => !langs.includes(l));
+      const tags = page.hreflang.map((h) => h.lang.toLowerCase());
+      // "en" được coi là có nếu trang khai báo "en" hoặc "en-xx"; "pt-BR" cần đúng "pt-br"
+      const missing = opts.projectLocales.filter((l) => {
+        const code = l.toLowerCase();
+        return code.includes("-") ? !tags.includes(code) : !tags.some((t) => baseLang(t) === code);
+      });
       if (missing.length) add({ id: "hreflang_incomplete", category: "international", severity: "warning", params: { locales: missing.join(", ") } });
       else add({ id: "hreflang_ok", category: "international", severity: "pass" });
       if (!page.hreflang.some((h) => h.lang.toLowerCase() === "x-default"))
         add({ id: "hreflang_xdefault", category: "international", severity: "info" });
+      // Nhiều thị trường dùng chung một ngôn ngữ (vd: en cho US + UK) → nên dùng hreflang theo vùng
+      if (markets.length > 1 && !tags.some((t) => /^[a-z]{2,3}-[a-z]{2}$/.test(t)))
+        add({ id: "hreflang_regional", category: "international", severity: "info", params: { markets: markets.map((m) => m.toUpperCase()).join(", ") } });
     }
   }
 

@@ -15,6 +15,7 @@ const ProjectInput = z.object({
   default_locale: z.string().min(2),
   locales: z.array(z.string()).min(1),
   country: z.string().length(2),
+  markets: z.array(z.string().length(2)).default([]),
 });
 export type ProjectInput = z.infer<typeof ProjectInput>;
 
@@ -27,6 +28,7 @@ export async function saveProject(input: ProjectInput, id?: string): Promise<Act
       ...data,
       domain: hostOf(data.domain),
       locales: Array.from(new Set([data.default_locale, ...data.locales])),
+      markets: Array.from(new Set([data.country, ...data.markets])),
     };
     if (id) {
       const { error } = await session.supabase.from("projects").update(row).eq("id", id);

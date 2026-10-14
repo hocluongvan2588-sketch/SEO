@@ -13,7 +13,14 @@
     "newProject": "New project",
     "quickActions": "Quick actions",
     "signOut": "Sign out",
-    "role": { "admin": "Admin", "editor": "Editor", "viewer": "Viewer" }
+    "role": {
+      "admin": "Admin",
+      "editor": "Editor",
+      "viewer": "Viewer",
+      "unknown": "Unknown role"
+    },
+    "profileMissingTitle": "Could not load this account’s profile",
+    "profileMissingDesc": "Account {email} (ID: {id}) has no row in the profiles table, so its role is unknown. Run supabase/migrations/0002_international_and_profiles.sql in the Supabase SQL Editor and reload."
   },
   "palette": {
     "placeholder": "Search actions, projects…",
@@ -104,9 +111,26 @@
     "colStatus": "Status",
     "noMatch": "No keywords match the filters",
     "showing": "Showing {shown} of {total} keywords",
-    "status": { "new": "New", "planned": "Planned", "writing": "Writing", "published": "Published", "ignored": "Ignored" },
-    "priority": { "high": "High", "medium": "Medium", "low": "Low" },
-    "intent": { "informational": "Informational", "commercial": "Commercial", "transactional": "Transactional", "navigational": "Navigational" }
+    "status": {
+      "new": "New",
+      "planned": "Planned",
+      "writing": "Writing",
+      "published": "Published",
+      "ignored": "Ignored"
+    },
+    "priority": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "intent": {
+      "informational": "Informational",
+      "commercial": "Commercial",
+      "transactional": "Transactional",
+      "navigational": "Navigational"
+    },
+    "allMarkets": "All markets",
+    "market": "Market"
   },
   "research": {
     "seedPh": "Enter a seed keyword, e.g. warehouse management software",
@@ -156,7 +180,10 @@
     "locales": "Target languages",
     "localesHint": "Used for multilingual keyword research and hreflang checks",
     "save": "Save project",
-    "saved": "Project saved"
+    "saved": "Project saved",
+    "markets": "Target markets",
+    "marketsHint": "Countries where you want to rank — used for keyword research and per-country rank tracking",
+    "searchLanguage": "Search languages…"
   },
   "audits": {
     "title": "SEO audit",
@@ -183,8 +210,17 @@
     "pageFacts": "Page facts",
     "lang": "Language (lang)",
     "words": "Word count",
-    "sev": { "error": "Errors", "warning": "Warnings", "info": "Notices", "pass": "Passed" },
-    "level": { "high": "High", "medium": "Medium", "low": "Low" },
+    "sev": {
+      "error": "Errors",
+      "warning": "Warnings",
+      "info": "Notices",
+      "pass": "Passed"
+    },
+    "level": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
     "cat": {
       "meta": "Meta & social",
       "content": "Content",
@@ -231,7 +267,8 @@
     "hreflang_missing": "Multilingual project but the page has no hreflang",
     "hreflang_incomplete": "hreflang missing languages: {locales}",
     "hreflang_ok": "hreflang covers all target languages",
-    "hreflang_xdefault": "Consider adding hreflang x-default"
+    "hreflang_xdefault": "Consider adding hreflang x-default",
+    "hreflang_regional": "Project targets several markets ({markets}) — consider regional hreflang such as en-US, en-GB"
   },
   "schemas": {
     "title": "B2B schema",
@@ -293,7 +330,7 @@
   },
   "rankings": {
     "title": "Rankings",
-    "subtitle": "{domain} positions on Google (Top 30) per keyword",
+    "subtitle": "{domain} positions on Google (Top 30) per keyword and market",
     "checkAll": "Check all",
     "checking": "Checking {done}/{total}…",
     "checkedResult": "Checked {checked} keywords, {found} in the Top 30",
@@ -320,6 +357,17 @@
     "notConfigured": "Environment variable not set",
     "team": "Staff ({count})",
     "teamDesc": "Admin: full access · Editor: create and edit data · Viewer: read-only reports",
-    "roles": { "admin": "Admin", "editor": "Editor", "viewer": "Viewer" }
+    "roles": {
+      "admin": "Admin",
+      "editor": "Editor",
+      "viewer": "Viewer"
+    }
+  },
+  "picker": {
+    "search": "Search countries…",
+    "suggested": "Suggested",
+    "all": "All countries",
+    "empty": "No results",
+    "addMarket": "+ Add market"
   }
 }

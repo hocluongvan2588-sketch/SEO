@@ -13,8 +13,8 @@
 | **Từ khóa → Danh sách** | Lọc, nhóm theo cụm, đổi trạng thái (Mới → Lên kế hoạch → Đang viết → Đã đăng), thao tác hàng loạt, AI gom cụm, xuất CSV, thêm thủ công |
 | **Audit SEO** | Tải trang qua Web Unlocker → kiểm tra meta, heading, nội dung, canonical, indexability, Open Graph, ảnh alt, liên kết, JSON-LD, `lang`, **hreflang theo ngôn ngữ của dự án** → chấm điểm → Claude đề xuất cách sửa theo thứ tự ưu tiên |
 | **Schema B2B** | Form mẫu (Organization, LocalBusiness, Service, Product, FAQPage, BreadcrumbList, Article) với xem trước trực tiếp, hoặc **AI tạo JSON-LD từ URL**; thư viện schema, sao chép 1 chạm |
-| **Thứ hạng** | Kiểm tra vị trí domain trong Top 30 Google, lịch sử, thay đổi, biểu đồ xu hướng |
-| **Dự án** | Nhiều website; mỗi dự án có ngôn ngữ chính, các ngôn ngữ mục tiêu, thị trường |
+| **Thứ hạng** | Kiểm tra vị trí domain trong Top 30 Google **theo từng quốc gia** (proxy đặt tại nước đó), lịch sử, thay đổi, biểu đồ xu hướng |
+| **Dự án** | Nhiều website; mỗi dự án có ngôn ngữ chính, ~40 ngôn ngữ nội dung và **nhiều thị trường quốc tế** (toàn bộ quốc gia Google hỗ trợ) |
 | **Cài đặt** | Hồ sơ, trạng thái tích hợp, phân quyền nhân viên (Quản trị / Biên tập / Chỉ xem) |
 
 Tối ưu cho nhân viên: giao diện tiếng Việt/English, chế độ sáng/tối, `Ctrl + K` mở thao tác nhanh, chọn dự án một lần cho mọi trang, thao tác hàng loạt, xuất CSV, responsive trên mobile.
@@ -23,7 +23,7 @@ Tối ưu cho nhân viên: giao diện tiếng Việt/English, chế độ sáng
 
 ### 1. Supabase
 1. Tạo project trên [supabase.com](https://supabase.com).
-2. Chạy migration: dán nội dung `supabase/migrations/0001_init.sql` vào **SQL Editor**, hoặc `supabase db push` nếu dùng Supabase CLI.
+2. Chạy migration **theo thứ tự**: dán lần lượt `supabase/migrations/0001_init.sql` rồi `0002_international_and_profiles.sql` vào **SQL Editor**, hoặc `supabase db push` nếu dùng Supabase CLI.
 3. **Authentication → Providers → Email**: bật Email. Với hệ thống nội bộ nên **tắt "Allow new users to sign up"** và mời nhân viên qua **Authentication → Users → Invite**.
 4. **Authentication → URL Configuration**: thêm `https://<domain-app>/auth/callback` vào Redirect URLs.
 5. Người đăng nhập đầu tiên tự động là **Quản trị**; những người sau là **Biên tập**, admin đổi quyền trong *Cài đặt*.
@@ -61,6 +61,7 @@ supabase/migrations/  schema DB + Row Level Security
 ```
 
 ## Lưu ý
+- Tài khoản tạo **trước** khi chạy migration sẽ được tự tạo profile ở lần đăng nhập kế tiếp (migration 0002). Nếu hệ thống chưa có admin, tài khoản đó thành admin.
 - **Độ khó từ khóa là ước tính của AI** dựa trên đối thủ trên SERP; Bright Data không cung cấp search volume. Nếu cần volume chính xác, có thể tích hợp thêm Google Ads Keyword Planner / Search Console.
 - Kiểm tra thứ hạng tốn 1–3 request SERP mỗi từ khóa (Top 30), chạy theo lô 25 từ khóa.
 

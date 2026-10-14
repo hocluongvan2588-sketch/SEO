@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import type { Profile } from "@/lib/types";
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -30,6 +31,12 @@ export async function getSession() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-  return { supabase, user, profile };
+  let { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+  if (!profile) {
+    // User tạo trước khi có trigger → tự tạo profile (migration 0002)
+    const { data, error } = await supabase.rpc("ensure_profile");
+    if (error) console.error("ensure_profile failed:", error.message);
+    profile = data && (data as { id?: string }).id ? data : null;
+  }
+  return { supabase, user, profile: profile as Profile | null };
 }

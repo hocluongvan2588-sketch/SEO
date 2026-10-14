@@ -5,7 +5,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { profile, user, projects, active } = await getWorkspace();
   return (
     <AppShell
-      user={{ email: user.email ?? "", name: profile?.full_name ?? user.email ?? "", role: profile?.role ?? "viewer" }}
+      user={{ email: user.email ?? "", name: profile?.full_name ?? user.email ?? "", role: profile?.role ?? "unknown" }}
+      profileMissing={!profile}
+      userId={user.id}
       projects={projects.map((p) => ({ id: p.id, name: p.name, domain: p.domain }))}
       activeProjectId={active?.id ?? null}
     >

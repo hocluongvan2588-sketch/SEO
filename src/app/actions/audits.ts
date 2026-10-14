@@ -20,7 +20,7 @@ export async function runAudit(input: { projectId: string; url: string; withAi: 
     new URL(url); // validate
     const { html, status, via } = await fetchPage(url);
     const page = parsePage(url, html, status);
-    const checks = runChecks(page, { projectLocales: project.locales });
+    const checks = runChecks(page, { projectLocales: project.locales, projectMarkets: project.markets ?? [project.country] });
     const score = scoreChecks(checks);
     const ai = input.withAi
       ? await auditInsights({ url, checks, page: page as unknown as Record<string, unknown>, staffLocale: await staffLocale() })

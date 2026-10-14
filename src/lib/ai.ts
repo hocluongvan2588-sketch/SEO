@@ -4,7 +4,9 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import type { SerpResult } from "./brightdata";
 import type { AuditCheck, Project } from "./types";
-import { localeLabel } from "./locales";
+import { countryName, languageName } from "./locales";
+
+const localeLabel = (code: string) => languageName(code, "en");
 
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-5-5";
 
@@ -65,16 +67,17 @@ export async function analyzeKeywords(input: {
   project: Project;
   seed: string;
   locale: string;
+  country: string;
   serp: SerpResult;
   staffLocale: string;
 }): Promise<KeywordAnalysis> {
-  const { project, seed, locale, serp, staffLocale } = input;
+  const { project, seed, locale, country, serp, staffLocale } = input;
   const result = await structured(
     KeywordAnalysisSchema,
     `Company: ${project.name} (${project.domain})
 Industry: ${project.industry ?? "n/a"}
 About: ${project.description ?? "n/a"}
-Target content language: ${localeLabel(locale)} (${locale}), market: ${project.country.toUpperCase()}
+Target content language: ${localeLabel(locale)} (${locale})\nTarget market: ${countryName(country, "en")} (${country.toUpperCase()}) — Google results below are localized for this market
 Staff language for explanations: ${localeLabel(staffLocale)}
 
 Seed keyword: "${seed}"
@@ -88,7 +91,7 @@ ${serp.peopleAlsoAsk.map((q) => `- ${q}`).join("\n") || "- (none)"}
 Related searches:
 ${serp.related.map((q) => `- ${q}`).join("\n") || "- (none)"}
 
-Task: propose 15-25 keyword opportunities for this B2B company around the seed (include the seed itself, long-tail variants, questions from PAA, related searches, commercial-intent B2B terms such as "supplier", "pricing", "solution", "for enterprise" in the target language).
+Task: propose 15-25 keyword opportunities for this B2B company around the seed (include the seed itself, long-tail variants, questions from PAA, related searches, commercial-intent B2B terms such as "supplier", "pricing", "solution", "for enterprise" in the target language, using the wording buyers in this market actually use).
 Group them into clusters, estimate difficulty from the strength of the ranking domains, and prioritise by business value for B2B lead generation.
 List content gaps the SERP leaves open and briefly note the main competitor domains.`,
   );

@@ -13,7 +13,14 @@
     "newProject": "Tạo dự án mới",
     "quickActions": "Thao tác nhanh",
     "signOut": "Đăng xuất",
-    "role": { "admin": "Quản trị", "editor": "Biên tập", "viewer": "Chỉ xem" }
+    "role": {
+      "admin": "Quản trị",
+      "editor": "Biên tập",
+      "viewer": "Chỉ xem",
+      "unknown": "Chưa rõ quyền"
+    },
+    "profileMissingTitle": "Không đọc được hồ sơ (profile) của tài khoản này",
+    "profileMissingDesc": "Tài khoản {email} (ID: {id}) chưa có dòng trong bảng profiles nên chưa xác định được quyền. Hãy chạy file supabase/migrations/0002_international_and_profiles.sql trong Supabase SQL Editor rồi tải lại trang."
   },
   "palette": {
     "placeholder": "Tìm chức năng, dự án…",
@@ -104,9 +111,26 @@
     "colStatus": "Trạng thái",
     "noMatch": "Không có từ khóa phù hợp bộ lọc",
     "showing": "Hiển thị {shown} / {total} từ khóa",
-    "status": { "new": "Mới", "planned": "Lên kế hoạch", "writing": "Đang viết", "published": "Đã đăng", "ignored": "Bỏ qua" },
-    "priority": { "high": "Cao", "medium": "Trung bình", "low": "Thấp" },
-    "intent": { "informational": "Thông tin", "commercial": "Thương mại", "transactional": "Giao dịch", "navigational": "Điều hướng" }
+    "status": {
+      "new": "Mới",
+      "planned": "Lên kế hoạch",
+      "writing": "Đang viết",
+      "published": "Đã đăng",
+      "ignored": "Bỏ qua"
+    },
+    "priority": {
+      "high": "Cao",
+      "medium": "Trung bình",
+      "low": "Thấp"
+    },
+    "intent": {
+      "informational": "Thông tin",
+      "commercial": "Thương mại",
+      "transactional": "Giao dịch",
+      "navigational": "Điều hướng"
+    },
+    "allMarkets": "Mọi thị trường",
+    "market": "Thị trường"
   },
   "research": {
     "seedPh": "Nhập từ khóa gốc, ví dụ: phần mềm quản lý kho",
@@ -156,7 +180,10 @@
     "locales": "Ngôn ngữ mục tiêu",
     "localesHint": "Dùng cho nghiên cứu từ khóa đa ngôn ngữ và kiểm tra hreflang",
     "save": "Lưu dự án",
-    "saved": "Đã lưu dự án"
+    "saved": "Đã lưu dự án",
+    "markets": "Thị trường mục tiêu",
+    "marketsHint": "Các quốc gia muốn lên top Google — dùng cho nghiên cứu từ khóa và theo dõi thứ hạng theo từng nước",
+    "searchLanguage": "Tìm ngôn ngữ…"
   },
   "audits": {
     "title": "Audit SEO",
@@ -183,8 +210,17 @@
     "pageFacts": "Thông tin trang",
     "lang": "Ngôn ngữ (lang)",
     "words": "Số từ",
-    "sev": { "error": "Lỗi", "warning": "Cảnh báo", "info": "Lưu ý", "pass": "Đạt" },
-    "level": { "high": "Cao", "medium": "Vừa", "low": "Thấp" },
+    "sev": {
+      "error": "Lỗi",
+      "warning": "Cảnh báo",
+      "info": "Lưu ý",
+      "pass": "Đạt"
+    },
+    "level": {
+      "high": "Cao",
+      "medium": "Vừa",
+      "low": "Thấp"
+    },
     "cat": {
       "meta": "Meta & Social",
       "content": "Nội dung",
@@ -231,7 +267,8 @@
     "hreflang_missing": "Dự án đa ngôn ngữ nhưng trang chưa có hreflang",
     "hreflang_incomplete": "hreflang thiếu ngôn ngữ: {locales}",
     "hreflang_ok": "hreflang đủ các ngôn ngữ mục tiêu",
-    "hreflang_xdefault": "Nên thêm hreflang x-default"
+    "hreflang_xdefault": "Nên thêm hreflang x-default",
+    "hreflang_regional": "Dự án nhắm nhiều thị trường ({markets}) — nên dùng hreflang theo vùng, ví dụ en-US, en-GB"
   },
   "schemas": {
     "title": "Schema B2B",
@@ -293,7 +330,7 @@
   },
   "rankings": {
     "title": "Thứ hạng",
-    "subtitle": "Vị trí của {domain} trên Google (Top 30) theo từng từ khóa",
+    "subtitle": "Vị trí của {domain} trên Google (Top 30) theo từng từ khóa và thị trường",
     "checkAll": "Kiểm tra tất cả",
     "checking": "Đang kiểm tra {done}/{total}…",
     "checkedResult": "Đã kiểm tra {checked} từ khóa, {found} có trong Top 30",
@@ -320,6 +357,17 @@
     "notConfigured": "Chưa đặt biến môi trường",
     "team": "Nhân viên ({count})",
     "teamDesc": "Quản trị: toàn quyền · Biên tập: tạo và sửa dữ liệu · Chỉ xem: xem báo cáo",
-    "roles": { "admin": "Quản trị", "editor": "Biên tập", "viewer": "Chỉ xem" }
+    "roles": {
+      "admin": "Quản trị",
+      "editor": "Biên tập",
+      "viewer": "Chỉ xem"
+    }
+  },
+  "picker": {
+    "search": "Tìm quốc gia…",
+    "suggested": "Gợi ý",
+    "all": "Tất cả quốc gia",
+    "empty": "Không tìm thấy",
+    "addMarket": "+ Thêm thị trường"
   }
 }

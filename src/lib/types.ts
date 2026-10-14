@@ -18,6 +18,8 @@ export interface Project {
   default_locale: string;
   locales: string[];
   country: string;
+  /** Các thị trường (mã quốc gia) mục tiêu */
+  markets: string[];
   created_at: string;
 }
 
@@ -30,6 +32,7 @@ export interface Keyword {
   research_id: string | null;
   keyword: string;
   locale: string;
+  country: string;
   intent: string | null;
   difficulty: number | null;
   priority: Priority | null;

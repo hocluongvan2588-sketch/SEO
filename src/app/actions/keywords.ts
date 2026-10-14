@@ -7,7 +7,6 @@ import { fail, type ActionResult } from "@/lib/context";
 import { staffLocale } from "@/lib/staff-locale";
 import { getSession } from "@/lib/supabase/server";
 import type { KeywordStatus, Priority, Project } from "@/lib/types";
-import { CONTENT_LOCALES } from "@/lib/locales";
 
 async function loadProject(projectId: string) {
   const session = await getSession();
@@ -35,7 +34,7 @@ export async function runKeywordResearch(input: {
     const seed = input.seed.trim();
     if (!seed) throw new Error("Seed keyword is required");
     const serp = await googleSearch(seed, { hl: input.locale, gl: input.country });
-    const ai = await analyzeKeywords({ project, seed, locale: input.locale, serp, staffLocale: await staffLocale() });
+    const ai = await analyzeKeywords({ project, seed, locale: input.locale, country: input.country, serp, staffLocale: await staffLocale() });
     const { data, error } = await session.supabase
       .from("keyword_research")
       .insert({
@@ -60,6 +59,7 @@ export async function saveKeywords(input: {
   projectId: string;
   researchId: string | null;
   locale: string;
+  country: string;
   keywords: KeywordAnalysis["keywords"];
 }): Promise<ActionResult<{ count: number }>> {
   try {
@@ -70,6 +70,7 @@ export async function saveKeywords(input: {
       research_id: input.researchId,
       keyword: k.keyword.trim().toLowerCase(),
       locale: input.locale,
+      country: input.country,
       intent: k.intent,
       difficulty: k.difficulty,
       priority: k.priority,
@@ -79,7 +80,7 @@ export async function saveKeywords(input: {
     }));
     const { error } = await session.supabase
       .from("keywords")
-      .upsert(rows, { onConflict: "project_id,keyword,locale", ignoreDuplicates: true });
+      .upsert(rows, { onConflict: "project_id,keyword,locale,country", ignoreDuplicates: true });
     if (error) throw error;
     revalidatePath("/keywords");
     return { ok: true, data: { count: rows.length } };
@@ -91,6 +92,7 @@ export async function saveKeywords(input: {
 export async function addKeywordsManually(input: {
   projectId: string;
   locale: string;
+  country: string;
   keywords: string[];
 }): Promise<ActionResult<{ count: number }>> {
   try {
@@ -100,10 +102,11 @@ export async function addKeywordsManually(input: {
       project_id: input.projectId,
       keyword,
       locale: input.locale,
+      country: input.country,
     }));
     const { error } = await session.supabase
       .from("keywords")
-      .upsert(rows, { onConflict: "project_id,keyword,locale", ignoreDuplicates: true });
+      .upsert(rows, { onConflict: "project_id,keyword,locale,country", ignoreDuplicates: true });
     if (error) throw error;
     revalidatePath("/keywords");
     return { ok: true, data: { count: rows.length } };
@@ -186,16 +189,12 @@ export async function checkRankings(projectId: string, ids: string[]): Promise<A
     const { session, project } = await loadProject(projectId);
     const { data: rows, error } = await session.supabase
       .from("keywords")
-      .select("id, keyword, locale, best_position")
+      .select("id, keyword, locale, country, best_position")
       .in("id", ids.slice(0, 25));
     if (error) throw error;
     let found = 0;
     for (const row of rows ?? []) {
-      const gl =
-        row.locale === project.default_locale
-          ? project.country
-          : (CONTENT_LOCALES.find((l) => l.code === row.locale)?.country ?? project.country);
-      const { position, url } = await findRank(row.keyword, project.domain, { hl: row.locale, gl });
+      const { position, url } = await findRank(row.keyword, project.domain, { hl: row.locale, gl: row.country || project.country });
       if (position) found++;
       const now = new Date().toISOString();
       await session.supabase.from("rank_checks").insert({ keyword_id: row.id, position, url, checked_at: now });

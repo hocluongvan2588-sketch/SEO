@@ -2,13 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { ExternalLink, History, Lightbulb, Loader2, Save, Search, Sparkles, Users } from "lucide-react";
 import { toast } from "sonner";
 import { getResearch, runKeywordResearch, saveKeywords, type ResearchResult } from "@/app/actions/keywords";
 import { DifficultyBar, IntentBadge, PriorityBadge } from "@/components/keyword-bits";
 import { Badge, Button, Card, CardHeader, Input, Select } from "@/components/ui";
-import { CONTENT_LOCALES, COUNTRIES, localeLabel } from "@/lib/locales";
+import { countryName, defaultCountryFor, flag, languageName } from "@/lib/locales";
+import { CountrySelect } from "@/components/ui/country-picker";
 import type { Project } from "@/lib/types";
 
 export function ResearchPanel({
@@ -23,29 +24,32 @@ export function ResearchPanel({
   onSaved: () => void;
 }) {
   const t = useTranslations("research");
+  const ui = useLocale();
+  const markets = project.markets?.length ? project.markets : [project.country];
   const format = useFormatter();
   const router = useRouter();
   const [seed, setSeed] = useState("");
   const [locale, setLocale] = useState(project.default_locale);
   const [country, setCountry] = useState(project.country);
-  const [result, setResult] = useState<(ResearchResult & { locale: string }) | null>(null);
+  const [result, setResult] = useState<(ResearchResult & { locale: string; country: string }) | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [running, startRun] = useTransition();
   const [saving, startSave] = useTransition();
 
+  // Đổi ngôn ngữ → gợi ý thị trường phù hợp trong các thị trường của dự án
   const onLocaleChange = (code: string) => {
     setLocale(code);
-    if (code !== project.default_locale) {
-      const c = CONTENT_LOCALES.find((l) => l.code === code)?.country;
-      if (c) setCountry(c);
-    } else setCountry(project.country);
+    if (code === project.default_locale) return setCountry(project.country);
+    const suggested = defaultCountryFor(code);
+    if (suggested && markets.includes(suggested)) setCountry(suggested);
+    else if (suggested && !markets.includes(country)) setCountry(suggested);
   };
 
   const run = () =>
     startRun(async () => {
       const res = await runKeywordResearch({ projectId: project.id, seed, locale, country });
       if (!res.ok) return void toast.error(t("failed"), { description: res.error });
-      setResult({ ...res.data, locale });
+      setResult({ ...res.data, locale, country });
       setSelected(new Set(res.data.ai.keywords.map((_, i) => i).filter((i) => res.data.ai.keywords[i].priority !== "low")));
       router.refresh();
     });
@@ -65,7 +69,7 @@ export function ResearchPanel({
     startSave(async () => {
       if (!result) return;
       const kws = result.ai.keywords.filter((_, i) => selected.has(i));
-      const res = await saveKeywords({ projectId: project.id, researchId: result.researchId, locale: result.locale, keywords: kws });
+      const res = await saveKeywords({ projectId: project.id, researchId: result.researchId, locale: result.locale, country: result.country, keywords: kws });
       if (!res.ok) return void toast.error(res.error);
       toast.success(t("saved", { count: res.data.count }));
       router.refresh();
@@ -81,7 +85,7 @@ export function ResearchPanel({
     <div className="space-y-6">
       <Card className="p-5">
         <form
-          className="grid gap-3 md:grid-cols-[1fr_180px_180px_auto]"
+          className="grid gap-3 md:grid-cols-[1fr_190px_210px_auto]"
           onSubmit={(e) => {
             e.preventDefault();
             if (seed.trim()) run();
@@ -101,17 +105,11 @@ export function ResearchPanel({
           <Select value={locale} onChange={(e) => onLocaleChange(e.target.value)} disabled={running}>
             {project.locales.map((l) => (
               <option key={l} value={l}>
-                {localeLabel(l)}
+                {languageName(l, ui)}
               </option>
             ))}
           </Select>
-          <Select value={country} onChange={(e) => setCountry(e.target.value)} disabled={running}>
-            {COUNTRIES.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.label}
-              </option>
-            ))}
-          </Select>
+          <CountrySelect value={country} onChange={setCountry} pinned={markets} disabled={running} />
           <Button type="submit" loading={running} disabled={!seed.trim() || !canWrite}>
             {!running && <Sparkles className="h-4 w-4" />}
             {t("run")}
@@ -132,7 +130,7 @@ export function ResearchPanel({
                 className="rounded-full border border-border px-3 py-1 text-xs text-text hover:border-primary hover:text-primary"
                 title={format.dateTime(new Date(h.created_at), { dateStyle: "medium", timeStyle: "short" })}
               >
-                {h.seed} · {h.locale.toUpperCase()}
+                {flag(h.country)} {h.seed} · {h.locale}
               </button>
             ))}
           </div>
@@ -163,7 +161,7 @@ export function ResearchPanel({
 
           <Card>
             <CardHeader
-              title={t("ideas", { count: result.ai.keywords.length })}
+              title={`${t("ideas", { count: result.ai.keywords.length })} · ${flag(result.country)} ${countryName(result.country, ui)}`}
               description={t("ideasDesc")}
               action={
                 canWrite && (

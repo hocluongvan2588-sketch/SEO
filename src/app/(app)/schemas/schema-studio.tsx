@@ -2,12 +2,12 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { Braces, Check, Copy, ExternalLink, FileCode2, Plus, Save, Sparkles, Trash2, Wand2, X } from "lucide-react";
 import { toast } from "sonner";
 import { deleteSchema, generateSchemaFromUrl, saveSchema } from "@/app/actions/schemas";
 import { Badge, Button, Card, CardHeader, EmptyState, Field, Input, Select, Textarea } from "@/components/ui";
-import { localeLabel } from "@/lib/locales";
+import { languageName } from "@/lib/locales";
 import { buildJsonLd, SCHEMA_TEMPLATES, type SchemaInput } from "@/lib/schema-templates";
 import type { Project, SchemaRecord } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,7 @@ type Pair = { a: string; b: string };
 export function SchemaStudio({ project, saved, canWrite }: { project: Project; saved: SchemaRecord[]; canWrite: boolean }) {
   const t = useTranslations("schemas");
   const tf = useTranslations("schemas.fields");
+  const ui = useLocale();
   const format = useFormatter();
   const router = useRouter();
   const [mode, setMode] = useState<"template" | "ai">("template");
@@ -95,7 +96,7 @@ export function SchemaStudio({ project, saved, canWrite }: { project: Project; s
                 <Select value={locale} onChange={(e) => setLocale(e.target.value)}>
                   {project.locales.map((l) => (
                     <option key={l} value={l}>
-                      {localeLabel(l)}
+                      {languageName(l, ui)}
                     </option>
                   ))}
                 </Select>
