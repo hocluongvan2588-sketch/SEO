@@ -71,10 +71,9 @@ export function ScanPanel({ project, latest, canWrite }: { project: Project; lat
   return (
     <Card>
       <CardHeader
-        title={t("scanTitle")}
-        description={t("scanDesc")}
+        title={t("scanTitle", { name: project.name })}
+        description={t("scanDesc", { domain: project.domain })}
         icon={<FileSearch className="h-4 w-4" />}
-        action={<Badge tone="primary">{t("forProject", { name: project.name })}</Badge>}
       />
       {/* Ba cột căn theo đỉnh: nhãn cùng hàng, ô nhập cùng hàng; thẻ thị trường nằm dưới ô chọn */}
       <div className="grid gap-4 border-b border-border p-5 lg:grid-cols-[1fr_1fr_auto] lg:items-start">

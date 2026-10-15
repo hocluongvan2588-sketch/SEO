@@ -590,8 +590,8 @@
     "title": "Sản phẩm",
     "subtitle": "Sản phẩm của {domain} — nền tảng để chọn từ khóa đúng",
     "notReady": "Cần chạy migration 0009_products.sql trong Supabase.",
-    "scanTitle": "Quét website khách",
-    "scanDesc": "Đọc trang chủ và tối đa 9 trang sản phẩm/dịch vụ/giới thiệu qua Bright Data, AI liệt kê sản phẩm và đề xuất từ khóa gốc theo thị trường.",
+    "scanTitle": "Quét website của {name}",
+    "scanDesc": "Đọc trang chủ và tối đa 9 trang sản phẩm/dịch vụ/giới thiệu của {domain} qua Bright Data; AI liệt kê sản phẩm và đề xuất từ khóa gốc theo thị trường. Muốn làm cho doanh nghiệp khác, hãy đổi hoặc tạo dự án ở góc trên bên trái.",
     "url": "Website",
     "markets": "Thị trường mục tiêu",
     "marketsHint": "Tối đa 6 thị trường",
@@ -645,7 +645,6 @@
     "urlPh": "VD: https://congtykhach.com",
     "mismatchBefore": "{host} khác domain của dự án đang chọn ({project} – {domain}). Có thể quét để tham khảo, nhưng sản phẩm sẽ không lưu được vào dự án này. Nên tạo dự án riêng cho khách.",
     "mismatchSave": "Kết quả này là của {host}, không thuộc dự án {project} nên không lưu vào danh mục. Tạo dự án cho khách rồi quét lại để lưu sản phẩm.",
-    "createProjectFor": "Tạo dự án cho {host}",
-    "forProject": "Dự án: {name}"
+    "createProjectFor": "Tạo dự án cho {host}"
   }
 }

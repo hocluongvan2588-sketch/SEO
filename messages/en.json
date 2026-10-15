@@ -590,8 +590,8 @@
     "title": "Products",
     "subtitle": "What {domain} sells — the basis for choosing the right keywords",
     "notReady": "Run migration 0009_products.sql in Supabase first.",
-    "scanTitle": "Scan client website",
-    "scanDesc": "Reads the homepage and up to 9 product/service/about pages via Bright Data; AI lists products and suggests seed keywords per market.",
+    "scanTitle": "Scan {name}'s website",
+    "scanDesc": "Reads the homepage and up to 9 product/service/about pages of {domain} via Bright Data; AI lists products and suggests seed keywords per market. To work on another company, switch or create a project at the top left.",
     "url": "Website",
     "markets": "Target markets",
     "marketsHint": "Up to 6 markets",
@@ -645,7 +645,6 @@
     "urlPh": "e.g. https://client-company.com",
     "mismatchBefore": "{host} is not the current project's domain ({project} – {domain}). You can scan it for reference, but products can't be saved to this project. Create a separate project for this client.",
     "mismatchSave": "These results are for {host}, not project {project}, so they can't be saved to the catalog. Create a project for the client and scan again to save products.",
-    "createProjectFor": "Create project for {host}",
-    "forProject": "Project: {name}"
+    "createProjectFor": "Create project for {host}"
   }
 }
