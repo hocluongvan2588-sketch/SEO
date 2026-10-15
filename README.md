@@ -27,7 +27,7 @@ Tối ưu cho nhân viên: giao diện tiếng Việt/English, chế độ sáng
 
 ### 1. Supabase
 1. Tạo project trên [supabase.com](https://supabase.com).
-2. Chạy migration **theo thứ tự**: dán lần lượt `0001_init.sql` → `0002_international_and_profiles.sql` → `0003_grants.sql` → `0004_usage_and_budgets.sql` → `0005_leads.sql` → `0006_auto_rank_checks.sql` → `0007_scale.sql` → `0008_reports.sql` → `0009_products.sql` (trong `supabase/migrations/`) vào **SQL Editor**, hoặc `supabase db push` nếu dùng Supabase CLI.
+2. Chạy migration **theo thứ tự**: dán lần lượt `0001_init.sql` → `0002_international_and_profiles.sql` → `0003_grants.sql` → `0004_usage_and_budgets.sql` → `0005_leads.sql` → `0006_auto_rank_checks.sql` → `0007_scale.sql` → `0008_reports.sql` → `0009_products.sql` → `0010_permission_guards.sql` (trong `supabase/migrations/`) vào **SQL Editor**, hoặc `supabase db push` nếu dùng Supabase CLI.
 3. **Authentication → Providers → Email**: bật Email. Với hệ thống nội bộ nên **tắt "Allow new users to sign up"** và mời nhân viên qua **Authentication → Users → Invite**.
 4. **Authentication → URL Configuration**: thêm `https://<domain-app>/auth/callback` vào Redirect URLs.
 5. Người đăng nhập đầu tiên tự động là **Quản trị**; những người sau là **Biên tập**, admin đổi quyền trong *Cài đặt*.

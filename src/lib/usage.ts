@@ -105,6 +105,11 @@ export interface MeteredContext {
  * (request Bright Data đã thành công vẫn bị tính phí).
  */
 export async function metered<T>(ctx: MeteredContext, fn: () => Promise<T>): Promise<{ result: T; costUsd: number }> {
+  // Thao tác tốn phí chỉ dành cho Quản trị / Biên tập (cron chạy với userId = null bằng service role)
+  if (ctx.userId) {
+    const { data: canWrite, error } = await ctx.supabase.rpc("can_write");
+    if (!error && canWrite === false) throw new Error("Tài khoản Chỉ xem không được chạy thao tác tốn phí. Hãy nhờ Quản trị nâng quyền.");
+  }
   const spend = await getMonthSpend(ctx.supabase);
   if (spend) {
     if (ctx.providers.includes("claude") && spend.claude_usd >= spend.claude_budget_usd) throw new BudgetExceededError("claude");

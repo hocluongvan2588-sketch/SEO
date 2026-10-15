@@ -9,6 +9,11 @@ export async function updateMemberRole(id: string, role: StaffRole): Promise<Act
   try {
     const session = await getSession();
     if (session?.profile?.role !== "admin") throw new Error("Admin only");
+    if (role !== "admin") {
+      // Luôn phải còn ít nhất một Quản trị, tránh tự khóa hệ thống
+      const { count } = await session.supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "admin").neq("id", id);
+      if (!count) throw new Error("Phải còn ít nhất một Quản trị. Hãy cấp quyền Quản trị cho người khác trước.");
+    }
     const { error } = await session.supabase.from("profiles").update({ role }).eq("id", id);
     if (error) throw error;
     revalidatePath("/settings");
