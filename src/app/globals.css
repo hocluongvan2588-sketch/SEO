@@ -82,3 +82,32 @@ body {
 ::selection {
   background: var(--primary-soft);
 }
+
+/* Báo cáo gửi khách: luôn nền trắng (kể cả dark mode), in A4 giữ màu */
+.report-doc {
+  color-scheme: light;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+@page {
+  size: A4;
+  margin: 12mm 0;
+}
+/* Trang bìa: dải màu tràn sát mép trên */
+@page :first {
+  margin-top: 0;
+}
+@media print {
+  html,
+  body {
+    background: #fff !important;
+  }
+  [data-sonner-toaster] {
+    display: none !important;
+  }
+  .report-doc {
+    max-width: none;
+    box-shadow: none;
+    --tw-ring-shadow: 0 0 #0000;
+  }
+}

@@ -110,7 +110,7 @@ export function AppShell({ user, projects, activeProjectId, profileMissing, user
   return (
     <div className="min-h-screen">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border bg-surface lg:block">{sidebar}</aside>
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border bg-surface lg:block print:hidden">{sidebar}</aside>
 
       {/* Mobile sidebar */}
       {mobileOpen && (
@@ -125,8 +125,8 @@ export function AppShell({ user, projects, activeProjectId, profileMissing, user
         </div>
       )}
 
-      <div className="lg:pl-64">
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-border bg-surface/80 px-4 backdrop-blur sm:px-6">
+      <div className="lg:pl-64 print:pl-0">
+        <header className="sticky top-0 z-20 flex h-16 print:hidden items-center justify-between gap-3 border-b border-border bg-surface/80 px-4 backdrop-blur sm:px-6">
           <button className="rounded-md p-2 text-muted hover:bg-surface-2 lg:hidden" onClick={() => setMobileOpen(true)}>
             <Menu className="h-5 w-5" />
           </button>
@@ -138,9 +138,9 @@ export function AppShell({ user, projects, activeProjectId, profileMissing, user
             <ThemeToggle />
           </div>
         </header>
-        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:py-8">
+        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:py-8 print:max-w-none print:p-0">
           {profileMissing && (
-            <div className="mb-6 flex gap-3 rounded-xl border border-warning/40 bg-warning-soft px-4 py-3 text-sm text-text">
+            <div className="mb-6 flex gap-3 rounded-xl border border-warning/40 bg-warning-soft px-4 py-3 text-sm text-text print:hidden">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
               <div>
                 <div className="font-medium">{t("profileMissingTitle")}</div>
@@ -148,7 +148,9 @@ export function AppShell({ user, projects, activeProjectId, profileMissing, user
               </div>
             </div>
           )}
-          <BudgetBanner budget={budget} isAdmin={user.role === "admin"} />
+          <div className="print:hidden">
+            <BudgetBanner budget={budget} isAdmin={user.role === "admin"} />
+          </div>
           {children}
         </main>
       </div>

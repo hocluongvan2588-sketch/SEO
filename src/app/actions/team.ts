@@ -30,3 +30,24 @@ export async function updateMyName(fullName: string): Promise<ActionResult> {
     return fail(e);
   }
 }
+
+/** Cập nhật thông tin của chính mình (tên, chức danh, điện thoại — dùng trên báo cáo gửi khách). */
+export async function updateMyProfile(input: { fullName: string; jobTitle: string; phone: string }): Promise<ActionResult> {
+  try {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized");
+    const { error } = await session.supabase
+      .from("profiles")
+      .update({
+        full_name: input.fullName.trim(),
+        job_title: input.jobTitle.trim() || null,
+        phone: input.phone.trim() || null,
+      })
+      .eq("id", session.user.id);
+    if (error) throw error;
+    revalidatePath("/", "layout");
+    return { ok: true, data: undefined };
+  } catch (e) {
+    return fail(e);
+  }
+}

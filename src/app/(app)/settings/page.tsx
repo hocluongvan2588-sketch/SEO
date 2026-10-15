@@ -24,7 +24,7 @@ export default async function SettingsPage() {
         <Card>
           <CardHeader title={t("profile")} description={user.email} />
           <div className="p-5">
-            <ProfileForm name={profile?.full_name ?? ""} />
+            <ProfileForm name={profile?.full_name ?? ""} jobTitle={profile?.job_title ?? ""} phone={profile?.phone ?? ""} />
           </div>
         </Card>
 

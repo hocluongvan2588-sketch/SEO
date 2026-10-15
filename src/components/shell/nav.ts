@@ -1,4 +1,4 @@
-import { BarChart3, Braces, FolderKanban, Handshake, LayoutDashboard, ScanSearch, Search, Settings, Wallet } from "lucide-react";
+import { BarChart3, Braces, FileText, FolderKanban, Handshake, LayoutDashboard, ScanSearch, Search, Settings, Wallet } from "lucide-react";
 
 /** `adminOnly`: chỉ hiện cho Quản trị */
 export const NAV: { href: string; key: string; icon: typeof Wallet; adminOnly?: boolean }[] = [
@@ -8,6 +8,7 @@ export const NAV: { href: string; key: string; icon: typeof Wallet; adminOnly?: 
   { href: "/schemas", key: "schemas", icon: Braces },
   { href: "/rankings", key: "rankings", icon: BarChart3 },
   { href: "/leads", key: "leads", icon: Handshake },
+  { href: "/reports", key: "reports", icon: FileText },
   { href: "/projects", key: "projects", icon: FolderKanban },
   { href: "/usage", key: "usage", icon: Wallet, adminOnly: true },
   { href: "/settings", key: "settings", icon: Settings },

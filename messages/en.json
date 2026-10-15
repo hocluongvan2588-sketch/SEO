@@ -25,7 +25,8 @@
     "budgetNear": "{provider} has used {pct}% of this month’s budget.",
     "budgetOver": "{provider} is over this month’s budget ({pct}%) — features using it are paused.",
     "budgetManage": "Manage budgets",
-    "leads": "Buyers"
+    "leads": "Buyers",
+    "reports": "Reports"
   },
   "palette": {
     "placeholder": "Search actions, projects…",
@@ -391,7 +392,11 @@
       "admin": "Admin",
       "editor": "Editor",
       "viewer": "Viewer"
-    }
+    },
+    "jobTitle": "Job title",
+    "jobTitlePh": "e.g. SEO Consultant",
+    "phone": "Phone",
+    "contactHint": "Your name, title, phone and email appear as the contact on client reports."
   },
   "picker": {
     "search": "Search countries…",
@@ -429,7 +434,8 @@
       "schema": "Schema from URL",
       "rankings": "Rank checks",
       "cluster": "AI clustering",
-      "leads": "Buyer search & profiles"
+      "leads": "Buyer search & profiles",
+      "report": "Client reports"
     },
     "budgets": "Monthly budgets",
     "budgetsDesc": "80% shows a warning; 100% pauses that service’s paid features",
@@ -541,5 +547,41 @@
     "deleteOnRequest": "Delete (on request)",
     "sortScore": "Highest AI score",
     "sortNewest": "Recently added"
+  },
+  "reports": {
+    "title": "Reports",
+    "subtitle": "Client-ready SEO assessment for {domain} — download as PDF",
+    "create": "New report",
+    "createDesc": "Uses the project's audits, keywords and rankings; AI writes the findings and roadmap.",
+    "list": "Reports",
+    "empty": "No reports yet",
+    "emptyDesc": "Audit a few pages and research keywords, then create a report to send to the client.",
+    "notReady": "Run migration 0008_reports.sql in Supabase first.",
+    "dataAudits": "Pages audited",
+    "dataKeywords": "Keywords",
+    "noData": "This project has no audits or keywords yet — add some so the report has content.",
+    "language": "Report language",
+    "sections": "Sections",
+    "sectionsHint": "Summary, key issues and contact are always included.",
+    "section": {
+      "health": "Website health",
+      "international": "International readiness",
+      "keywords": "Keyword opportunities",
+      "competitors": "Competitors on Google",
+      "rankings": "Current positions",
+      "roadmap": "Quick wins & roadmap"
+    },
+    "contactMissing": "You will appear as the contact person. Add your job title and phone number.",
+    "openSettings": "Open Settings",
+    "generate": "Create report",
+    "generating": "AI is writing the report… (about 30–60 seconds)",
+    "created": "Report created",
+    "costHint": "Costs about $0.03–0.10 (one Claude call).",
+    "back": "All reports",
+    "downloadPdf": "Download PDF",
+    "delete": "Delete",
+    "confirmDelete": "Delete this report?",
+    "validUntil": "valid until {date}",
+    "printHint": "Click Download PDF → choose “Save as PDF”. Turn on “Background graphics” to keep the colors."
   }
 }

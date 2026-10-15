@@ -6,6 +6,9 @@ export interface Profile {
   full_name: string | null;
   role: StaffRole;
   ui_locale: string;
+  /** Chức danh, số điện thoại — hiện trên báo cáo gửi khách (migration 0008) */
+  job_title?: string | null;
+  phone?: string | null;
   created_at: string;
 }
 
@@ -115,5 +118,19 @@ export interface SchemaRecord {
   locale: string;
   input: Record<string, unknown> | null;
   json_ld: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface ReportRecord {
+  id: string;
+  project_id: string;
+  title: string;
+  locale: "vi" | "en";
+  sections: string[];
+  data: import("./report-data").ReportData;
+  ai: import("./ai").ReportNarrative;
+  contact: { name: string; email: string; title: string | null; phone: string | null };
+  valid_until: string | null;
+  created_by: string | null;
   created_at: string;
 }

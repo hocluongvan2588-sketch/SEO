@@ -276,3 +276,70 @@ About: ${(l.about ?? "").slice(0, 600)}`,
     message: l.message.slice(0, 300),
   }));
 }
+
+// ---------------------------------------------------------------------------
+// Báo cáo đánh giá SEO gửi khách (trước khi chốt dịch vụ)
+// ---------------------------------------------------------------------------
+const ReportNarrativeSchema = z.object({
+  executive_summary: z
+    .string()
+    .describe("4-6 sentences for the client's CEO: current state, the biggest missed opportunity in export markets, what is at stake. Plain business language, no jargon."),
+  health_summary: z.string().describe("2-3 sentences on website health based on the audited pages"),
+  top_issues: z
+    .array(
+      z.object({
+        title: z.string().describe("Short problem statement, e.g. 'Google không nhận diện được thương hiệu'"),
+        impact: z.string().describe("1 sentence business impact. Say WHAT is wrong and why it matters — never HOW to fix it, no code"),
+        severity: z.enum(["high", "medium", "low"]),
+      }),
+    )
+    .describe("3-6 most important problems, most severe first"),
+  intl_summary: z.string().describe("2-3 sentences on readiness for international buyers: language versions, hreflang, structured data"),
+  keyword_summary: z.string().describe("2-3 sentences on keyword opportunities buyers in the target markets search for. Mention that difficulty is an estimate"),
+  competitor_summary: z.string().describe("2-3 sentences on who currently occupies Google results for those searches"),
+  ranking_summary: z.string().describe("1-2 sentences on current Google positions (often: not yet visible) as the starting point"),
+  quick_wins: z
+    .array(z.object({ title: z.string(), benefit: z.string().describe("1 sentence expected benefit") }))
+    .describe("Exactly 3 quick wins achievable in the first month"),
+  roadmap: z
+    .array(
+      z.object({
+        period: z.string().describe("e.g. 'Tháng 1' / 'Month 1', 'Tháng 2–3'"),
+        focus: z.string(),
+        items: z.array(z.string()).describe("2-4 deliverables"),
+      }),
+    )
+    .describe("3-4 phases covering 3-6 months"),
+  closing: z.string().describe("2 sentences inviting the client to a consultation call; confident, not pushy"),
+});
+export type ReportNarrative = z.infer<typeof ReportNarrativeSchema>;
+
+export async function writeReport(input: {
+  provider: string;
+  project: Project;
+  locale: "vi" | "en";
+  data: unknown;
+}): Promise<ReportNarrative> {
+  const { provider, project, locale, data } = input;
+  return structured(
+    ReportNarrativeSchema,
+    `You are writing a free pre-sales SEO assessment that ${provider} (an international SEO & export-market consultancy) will send to a prospective client.
+Goal: show clearly what is wrong, which export-market opportunities they are missing, and how ${provider} would help — so the client wants to sign.
+
+Rules:
+- Write everything in ${locale === "vi" ? "Vietnamese" : "English"}. Address the client as "${locale === "vi" ? "Quý công ty" : "your company"}"; refer to the consultancy as "${provider}".
+- Business language for a CEO. Short sentences. No technical jargon without a plain explanation.
+- Describe problems and opportunities, never step-by-step fixes or code (the fixes are part of the paid service).
+- Use only the data below. Keyword difficulty is an AI estimate and search volumes are not available — do not invent numbers.
+- If some data is missing (e.g. no keyword research or no rankings yet), say so briefly and turn it into a next step.
+
+Client website: ${project.name} (${project.domain})
+Industry: ${project.industry ?? "n/a"}
+About: ${project.description ?? "n/a"}
+Main country: ${countryName(project.country, "en")}; target markets: ${(project.markets ?? []).map((m) => countryName(m, "en")).join(", ") || "n/a"}
+
+Assessment data (JSON):
+${JSON.stringify(data)}`,
+    "medium",
+  );
+}

@@ -2,4 +2,7 @@
 export const BRAND = {
   name: "Vexim Growth",
   logo: "/brand/vexim-logo.png",
+  /** Công ty cung cấp dịch vụ — hiện trên báo cáo gửi khách */
+  company: "Vexim Global",
+  website: "veximglobal.com",
 };

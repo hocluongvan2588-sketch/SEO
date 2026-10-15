@@ -25,7 +25,8 @@
     "budgetNear": "{provider} đã dùng {pct}% ngân sách tháng này.",
     "budgetOver": "{provider} đã hết ngân sách tháng này ({pct}%) — các chức năng dùng dịch vụ này tạm khóa.",
     "budgetManage": "Quản lý ngân sách",
-    "leads": "Khách hàng"
+    "leads": "Khách hàng",
+    "reports": "Báo cáo"
   },
   "palette": {
     "placeholder": "Tìm chức năng, dự án…",
@@ -391,7 +392,11 @@
       "admin": "Quản trị",
       "editor": "Biên tập",
       "viewer": "Chỉ xem"
-    }
+    },
+    "jobTitle": "Chức danh",
+    "jobTitlePh": "VD: Chuyên viên tư vấn SEO",
+    "phone": "Số điện thoại",
+    "contactHint": "Tên, chức danh, số điện thoại và email hiện ở mục Người phụ trách trên báo cáo gửi khách."
   },
   "picker": {
     "search": "Tìm quốc gia…",
@@ -429,7 +434,8 @@
       "schema": "Schema từ URL",
       "rankings": "Kiểm tra thứ hạng",
       "cluster": "AI gom cụm",
-      "leads": "Tìm & lấy hồ sơ buyer"
+      "leads": "Tìm & lấy hồ sơ buyer",
+      "report": "Báo cáo gửi khách"
     },
     "budgets": "Ngân sách tháng",
     "budgetsDesc": "Đạt 80% hiện cảnh báo; đạt 100% tạm khóa chức năng tốn phí của dịch vụ đó",
@@ -541,5 +547,41 @@
     "deleteOnRequest": "Xóa (theo yêu cầu)",
     "sortScore": "Điểm AI cao nhất",
     "sortNewest": "Mới thêm gần đây"
+  },
+  "reports": {
+    "title": "Báo cáo",
+    "subtitle": "Báo cáo đánh giá SEO gửi khách cho {domain} — tải PDF",
+    "create": "Tạo báo cáo mới",
+    "createDesc": "Dùng dữ liệu audit, từ khóa, thứ hạng đã có của dự án; AI viết phần nhận định và lộ trình.",
+    "list": "Báo cáo đã tạo",
+    "empty": "Chưa có báo cáo",
+    "emptyDesc": "Audit vài trang và nghiên cứu từ khóa, sau đó tạo báo cáo để gửi khách.",
+    "notReady": "Cần chạy migration 0008_reports.sql trong Supabase.",
+    "dataAudits": "Trang đã audit",
+    "dataKeywords": "Từ khóa",
+    "noData": "Dự án chưa có audit hay từ khóa nào — hãy làm trước để báo cáo có nội dung.",
+    "language": "Ngôn ngữ báo cáo",
+    "sections": "Nội dung",
+    "sectionsHint": "Phần Tóm tắt, Vấn đề chính và Liên hệ luôn có.",
+    "section": {
+      "health": "Sức khỏe website",
+      "international": "Sẵn sàng thị trường quốc tế",
+      "keywords": "Cơ hội từ khóa",
+      "competitors": "Đối thủ trên Google",
+      "rankings": "Vị trí hiện tại",
+      "roadmap": "Việc làm nhanh & lộ trình"
+    },
+    "contactMissing": "Báo cáo sẽ ghi bạn là người phụ trách. Hãy bổ sung chức danh và số điện thoại.",
+    "openSettings": "Mở Cài đặt",
+    "generate": "Tạo báo cáo",
+    "generating": "AI đang viết báo cáo… (khoảng 30–60 giây)",
+    "created": "Đã tạo báo cáo",
+    "costHint": "Chi phí khoảng $0.03–0.10 (một lần gọi Claude).",
+    "back": "Tất cả báo cáo",
+    "downloadPdf": "Tải PDF",
+    "delete": "Xóa",
+    "confirmDelete": "Xóa báo cáo này?",
+    "validUntil": "hiệu lực đến {date}",
+    "printHint": "Bấm Tải PDF → chọn “Lưu dưới dạng PDF” (Save as PDF). Nên bật “Đồ họa nền” (Background graphics) để giữ màu."
   }
 }

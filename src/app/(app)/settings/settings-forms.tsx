@@ -4,36 +4,45 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { updateMemberRole, updateMyName } from "@/app/actions/team";
+import { updateMemberRole, updateMyProfile } from "@/app/actions/team";
 import { Button, Field, Input, Select } from "@/components/ui";
 import type { StaffRole } from "@/lib/types";
 
-export function ProfileForm({ name }: { name: string }) {
+export function ProfileForm({ name, jobTitle, phone }: { name: string; jobTitle: string; phone: string }) {
   const t = useTranslations("settings");
   const router = useRouter();
-  const [value, setValue] = useState(name);
+  const [v, setV] = useState({ fullName: name, jobTitle, phone });
   const [pending, start] = useTransition();
   return (
     <form
-      className="flex items-end gap-2"
+      className="space-y-4"
       onSubmit={(e) => {
         e.preventDefault();
         start(async () => {
-          const r = await updateMyName(value);
+          const r = await updateMyProfile(v);
           if (!r.ok) return void toast.error(r.error);
           toast.success(t("saved"));
           router.refresh();
         });
       }}
     >
-      <div className="flex-1">
-        <Field label={t("name")}>
-          <Input value={value} onChange={(e) => setValue(e.target.value)} />
+      <Field label={t("name")}>
+        <Input value={v.fullName} onChange={(e) => setV({ ...v, fullName: e.target.value })} />
+      </Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label={t("jobTitle")}>
+          <Input value={v.jobTitle} placeholder={t("jobTitlePh")} onChange={(e) => setV({ ...v, jobTitle: e.target.value })} />
+        </Field>
+        <Field label={t("phone")}>
+          <Input type="tel" value={v.phone} placeholder="+84 …" onChange={(e) => setV({ ...v, phone: e.target.value })} />
         </Field>
       </div>
-      <Button type="submit" loading={pending}>
-        {t("save")}
-      </Button>
+      <p className="text-xs text-muted">{t("contactHint")}</p>
+      <div className="flex justify-end">
+        <Button type="submit" loading={pending}>
+          {t("save")}
+        </Button>
+      </div>
     </form>
   );
 }
