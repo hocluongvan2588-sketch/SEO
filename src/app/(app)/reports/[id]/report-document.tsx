@@ -155,15 +155,9 @@ export function ReportDocument({ report }: { report: ReportRecord }) {
     <article className="report-doc mx-auto w-full max-w-[210mm] bg-white text-[13px] leading-relaxed text-[#1e293b] shadow-xl ring-1 ring-black/5">
       {/* Bìa */}
       <header className="bg-[#0f2a5c] px-10 py-8 text-white">
-        <div className="flex items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={BRAND.logo} alt="" className="h-11 w-11 rounded-lg bg-white p-1.5" />
-            <div>
-              <div className="text-lg font-semibold tracking-tight">{BRAND.company}</div>
-              <div className="text-xs text-white/70">{BRAND.website}</div>
-            </div>
-          </div>
+        <div className="flex items-start justify-between gap-6">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={BRAND.logoWhite} alt={BRAND.company} className="h-20 w-auto" />
           <div className="text-right text-xs text-white/75">
             <div>
               {l.date}: {fmtDate(report.created_at)}
@@ -173,9 +167,10 @@ export function ReportDocument({ report }: { report: ReportRecord }) {
                 {l.validUntil}: {fmtDate(report.valid_until)}
               </div>
             )}
+            <div className="mt-1 text-white/60">{BRAND.website}</div>
           </div>
         </div>
-        <h1 className="mt-10 text-3xl font-bold tracking-tight">{l.title}</h1>
+        <h1 className="mt-8 text-3xl font-bold tracking-tight">{l.title}</h1>
         <p className="mt-1 text-white/80">{l.subtitle}</p>
         <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm">
           <span className="text-white/70">{l.preparedFor}:</span>
