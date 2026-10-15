@@ -15,7 +15,7 @@ export default async function SchemasPage() {
   return (
     <>
       <PageHeader title={t("title")} description={t("subtitle")} />
-      <SchemaStudio project={active} saved={(data ?? []) as SchemaRecord[]} canWrite={profile?.role !== "viewer"} />
+      <SchemaStudio key={active.id} project={active} saved={(data ?? []) as SchemaRecord[]} canWrite={profile?.role !== "viewer"} />
     </>
   );
 }

@@ -27,7 +27,7 @@ export function SchemaStudio({ project, saved, canWrite }: { project: Project; s
   const [locale, setLocale] = useState(project.default_locale);
   const [name, setName] = useState("");
   const [values, setValues] = useState<SchemaInput>({ name: project.name, url: `https://${project.domain}` });
-  const [aiUrl, setAiUrl] = useState("");
+  const [aiUrl, setAiUrl] = useState(`https://${project.domain}/`);
   const [aiResult, setAiResult] = useState<{ schemaType: string; name: string; jsonLd: Record<string, unknown>; notes: string } | null>(null);
   const [generating, startGen] = useTransition();
   const [saving, startSave] = useTransition();

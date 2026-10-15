@@ -20,8 +20,8 @@ export function ScanPanel({ project, latest, canWrite }: { project: Project; lat
   const format = useFormatter();
   const router = useRouter();
   const costLabel = useCostLabel();
-  // Để trống: mỗi lần quét thường là website khách khác nhau
-  const [url, setUrl] = useState("");
+  // Tự điền website của dự án đang chọn (mỗi dự án = một website khách)
+  const [url, setUrl] = useState(`https://${project.domain}`);
   const [markets, setMarkets] = useState<string[]>(
     (project.markets ?? []).filter((m) => m !== project.country).slice(0, 3).length
       ? (project.markets ?? []).filter((m) => m !== project.country).slice(0, 3)
@@ -70,7 +70,12 @@ export function ScanPanel({ project, latest, canWrite }: { project: Project; lat
 
   return (
     <Card>
-      <CardHeader title={t("scanTitle")} description={t("scanDesc")} icon={<FileSearch className="h-4 w-4" />} />
+      <CardHeader
+        title={t("scanTitle")}
+        description={t("scanDesc")}
+        icon={<FileSearch className="h-4 w-4" />}
+        action={<Badge tone="primary">{t("forProject", { name: project.name })}</Badge>}
+      />
       {/* Ba cột căn theo đỉnh: nhãn cùng hàng, ô nhập cùng hàng; thẻ thị trường nằm dưới ô chọn */}
       <div className="grid gap-4 border-b border-border p-5 lg:grid-cols-[1fr_1fr_auto] lg:items-start">
         <Field label={t("url")}>

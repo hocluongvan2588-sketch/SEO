@@ -31,7 +31,8 @@ export default async function ProductsPage() {
       {error ? (
         <Card className="p-6 text-sm text-muted">{t("notReady")}</Card>
       ) : (
-        <div className="space-y-6">
+        // key theo dự án: đổi dự án → form làm mới với website của dự án mới
+        <div key={active.id} className="space-y-6">
           <ScanPanel project={active} latest={(scan as ScanRecord | null) ?? null} canWrite={canWrite} />
           <Catalog projectId={active.id} products={(products ?? []) as ProductRow[]} canWrite={canWrite} />
         </div>

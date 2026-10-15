@@ -25,7 +25,7 @@ export default async function AuditsPage() {
   return (
     <>
       <PageHeader title={t("title")} description={t("subtitle")} />
-      <AuditForm projectId={active.id} domain={active.domain} canWrite={profile?.role !== "viewer"} />
+      <AuditForm key={active.id} projectId={active.id} domain={active.domain} canWrite={profile?.role !== "viewer"} />
 
       <Card className="mt-6">
         <CardHeader title={t("history")} icon={<ScanSearch className="h-4 w-4" />} />

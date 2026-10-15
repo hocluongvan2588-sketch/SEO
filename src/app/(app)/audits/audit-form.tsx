@@ -13,7 +13,7 @@ export function AuditForm({ projectId, domain, canWrite }: { projectId: string; 
   const t = useTranslations("audits");
   const router = useRouter();
   const costLabel = useCostLabel();
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState(`https://${domain}/`);
   const [withAi, setWithAi] = useState(true);
   const [pending, start] = useTransition();
 
