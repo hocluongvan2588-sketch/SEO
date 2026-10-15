@@ -42,13 +42,20 @@ export function CountryMultiSelect({
   value,
   onChange,
   locked = [],
+  chipsBelow,
   ...rest
-}: BaseProps & { value: string[]; onChange: (codes: string[]) => void; locked?: string[] }) {
+}: BaseProps & {
+  value: string[];
+  onChange: (codes: string[]) => void;
+  locked?: string[];
+  /** Hiện các thẻ đã chọn bên dưới ô chọn (giữ ô chọn thẳng hàng với các ô khác trong một hàng) */
+  chipsBelow?: boolean;
+}) {
   const t = useTranslations("picker");
   const locale = useLocale();
   return (
-    <div>
-      <div className="mb-2 flex flex-wrap gap-1.5">
+    <div className={cn(chipsBelow && "flex flex-col-reverse")}>
+      <div className={cn("flex flex-wrap gap-1.5", chipsBelow ? "mt-2" : "mb-2", !value.length && "hidden")}>
         {value.map((code) => (
           <span key={code} className="inline-flex items-center gap-1 rounded-full bg-primary-soft py-1 pl-2.5 pr-1.5 text-xs font-medium text-primary">
             {flag(code)} {countryName(code, locale)}

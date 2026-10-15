@@ -7,7 +7,7 @@ import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { AlertTriangle, BadgeCheck, ExternalLink, FileSearch, Globe, Lightbulb, Save, Search, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { saveScannedProducts, scanWebsite, type ScanRecord } from "@/app/actions/products";
-import { Badge, Button, Card, CardHeader, Field, Input } from "@/components/ui";
+import { Badge, Button, Card, CardHeader, Field, Input, Label } from "@/components/ui";
 import { CountryMultiSelect } from "@/components/ui/country-picker";
 import { useCostLabel } from "@/components/use-cost";
 import { countryName, flag, languageName } from "@/lib/locales";
@@ -60,17 +60,21 @@ export function ScanPanel({ project, latest, canWrite }: { project: Project; lat
   return (
     <Card>
       <CardHeader title={t("scanTitle")} description={t("scanDesc")} icon={<FileSearch className="h-4 w-4" />} />
-      <div className="grid gap-4 border-b border-border p-5 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+      {/* Ba cột căn theo đỉnh: nhãn cùng hàng, ô nhập cùng hàng; thẻ thị trường nằm dưới ô chọn */}
+      <div className="grid gap-4 border-b border-border p-5 lg:grid-cols-[1fr_1fr_auto] lg:items-start">
         <Field label={t("url")}>
           <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" />
         </Field>
-        <Field label={t("markets")} hint={t("marketsHint")}>
-          <CountryMultiSelect value={markets} onChange={(m) => setMarkets(m.slice(0, 6))} pinned={project.markets} />
+        <Field label={`${t("markets")} (${t("marketsHint").toLowerCase()})`}>
+          <CountryMultiSelect value={markets} onChange={(m) => setMarkets(m.slice(0, 6))} pinned={project.markets} chipsBelow />
         </Field>
-        <Button onClick={run} loading={scanning} disabled={!canWrite || !markets.length || !url}>
-          {!scanning && <Search className="h-4 w-4" />}
-          {t("scan")}
-        </Button>
+        <div>
+          <Label className="invisible hidden lg:block">&nbsp;</Label>
+          <Button className="w-full lg:w-auto" onClick={run} loading={scanning} disabled={!canWrite || !markets.length || !url}>
+            {!scanning && <Search className="h-4 w-4" />}
+            {t("scan")}
+          </Button>
+        </div>
       </div>
 
       {!res ? (
