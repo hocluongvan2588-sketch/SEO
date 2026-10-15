@@ -9,7 +9,7 @@ import { staffLocale } from "@/lib/staff-locale";
 import { getSession } from "@/lib/supabase/server";
 import type { Project } from "@/lib/types";
 import { metered } from "@/lib/usage";
-import { normalizeUrl } from "@/lib/utils";
+import { hostOf, normalizeUrl } from "@/lib/utils";
 
 /** Một dữ kiện lấy từ website, kèm kết quả đối chiếu trích dẫn */
 export interface Cited {
@@ -73,7 +73,14 @@ export async function scanWebsite(input: z.input<typeof ScanInput>): Promise<Act
       async () => {
         const { pages, facts } = await crawlSite(normalizeUrl(v.url));
         if (!pages.some((p) => p.text.length > 200)) throw new Error("Không đọc được nội dung website (trang trống hoặc bị chặn)");
-        const ai = await scanSiteContent({ project: project as Project, pages, facts, markets: v.markets, staffLocale: lang });
+        const ai = await scanSiteContent({
+          project: project as Project,
+          ownSite: hostOf(v.url) === hostOf((project as Project).domain) || hostOf(v.url).endsWith(`.${hostOf((project as Project).domain)}`),
+          pages,
+          facts,
+          markets: v.markets,
+          staffLocale: lang,
+        });
         return { pages, facts, ai };
       },
     );
@@ -140,8 +147,17 @@ export async function saveScannedProducts(input: {
   try {
     const session = await getSession();
     if (!session) throw new Error("Unauthorized");
-    const { data: scan, error } = await session.supabase.from("site_scans").select("project_id, result").eq("id", input.scanId).single();
+    const { data: scan, error } = await session.supabase
+      .from("site_scans")
+      .select("project_id, url, result, projects(domain)")
+      .eq("id", input.scanId)
+      .single();
     if (error) throw error;
+    // Chặn lưu nhầm: website đã quét phải là website của dự án
+    const projectHost = hostOf((scan.projects as unknown as { domain: string } | null)?.domain ?? "");
+    const scanHost = hostOf(scan.url);
+    if (!projectHost || (scanHost !== projectHost && !scanHost.endsWith(`.${projectHost}`)))
+      throw new Error(`Website ${scanHost} không thuộc dự án này (${projectHost}). Hãy tạo dự án riêng cho khách rồi quét lại.`);
     const result = scan.result as ScanOutcome;
     const certs = input.certificationIndexes
       .map((i) => result.certifications[i])

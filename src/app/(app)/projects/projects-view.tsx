@@ -18,12 +18,18 @@ export function ProjectsView({
   projects,
   activeId,
   openNew,
+  initialDomain,
+  next,
   canWrite,
   isAdmin,
 }: {
   projects: Project[];
   activeId: string | null;
   openNew: boolean;
+  /** Điền sẵn domain khi tạo dự án (vd. từ trang Sản phẩm) */
+  initialDomain?: string;
+  /** Trang quay về sau khi tạo dự án */
+  next?: string;
   canWrite: boolean;
   isAdmin: boolean;
 }) {
@@ -153,9 +159,11 @@ export function ProjectsView({
         {editing !== null && (
           <ProjectForm
             project={editing === "new" ? null : editing}
+            initialDomain={editing === "new" ? initialDomain : undefined}
             onDone={() => {
               setEditing(null);
-              router.replace("/projects");
+              // Dự án mới được chọn làm dự án đang làm việc → quay lại trang trước (vd. Sản phẩm)
+              router.replace(editing === "new" && next ? next : "/projects");
               router.refresh();
             }}
           />
@@ -165,14 +173,14 @@ export function ProjectsView({
   );
 }
 
-function ProjectForm({ project, onDone }: { project: Project | null; onDone: () => void }) {
+function ProjectForm({ project, initialDomain, onDone }: { project: Project | null; initialDomain?: string; onDone: () => void }) {
   const t = useTranslations("projects");
   const ui = useLocale();
   const [pending, start] = useTransition();
   const [langQuery, setLangQuery] = useState("");
   const [form, setForm] = useState<ProjectInput>({
     name: project?.name ?? "",
-    domain: project?.domain ?? "",
+    domain: project?.domain ?? initialDomain ?? "",
     description: project?.description ?? "",
     industry: project?.industry ?? "",
     default_locale: project?.default_locale ?? "vi",

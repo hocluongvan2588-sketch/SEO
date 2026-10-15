@@ -12,7 +12,7 @@ import { CountryMultiSelect } from "@/components/ui/country-picker";
 import { useCostLabel } from "@/components/use-cost";
 import { countryName, flag, languageName } from "@/lib/locales";
 import type { Project } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, hostOf } from "@/lib/utils";
 
 export function ScanPanel({ project, latest, canWrite }: { project: Project; latest: ScanRecord | null; canWrite: boolean }) {
   const t = useTranslations("products");
@@ -54,6 +54,16 @@ export function ScanPanel({ project, latest, canWrite }: { project: Project; lat
       router.refresh();
     });
 
+  // Website đang nhập / đã quét có phải của dự án đang chọn không?
+  const projectHost = hostOf(project.domain);
+  const sameSite = (u: string) => {
+    const h = hostOf(u.trim());
+    return h === projectHost || h.endsWith(`.${projectHost}`);
+  };
+  const inputMismatch = url.trim().includes(".") && !sameSite(url);
+  const scanMismatch = !!scan && !sameSite(scan.url);
+  const newProjectHref = (u: string) => `/projects?new=1&domain=${encodeURIComponent(hostOf(u.trim()))}&next=/products`;
+
   const res = scan?.result;
   const rejectedTotal = res ? res.rejected.products + res.rejected.certifications + res.rejected.services : 0;
   const seedsByMarket = res ? Array.from(new Set(res.seeds.map((s) => s.country))) : [];
@@ -77,6 +87,14 @@ export function ScanPanel({ project, latest, canWrite }: { project: Project; lat
           </Button>
         </div>
       </div>
+
+      {inputMismatch && (
+        <MismatchNote
+          text={t("mismatchBefore", { host: hostOf(url.trim()), project: project.name, domain: projectHost })}
+          href={newProjectHref(url)}
+          cta={t("createProjectFor", { host: hostOf(url.trim()) })}
+        />
+      )}
 
       {!res ? (
         <p className="px-5 py-8 text-center text-sm text-muted">{t("noScan")}</p>
@@ -207,7 +225,15 @@ export function ScanPanel({ project, latest, canWrite }: { project: Project; lat
             </section>
           </div>
 
-          {canWrite && res.products.some((p) => p.verified_url) && (
+          {scanMismatch && (
+            <MismatchNote
+              text={t("mismatchSave", { host: hostOf(scan!.url), project: project.name })}
+              href={newProjectHref(scan!.url)}
+              cta={t("createProjectFor", { host: hostOf(scan!.url) })}
+            />
+          )}
+
+          {canWrite && !scanMismatch && res.products.some((p) => p.verified_url) && (
             <div className="flex justify-end">
               <Button onClick={save} loading={saving} disabled={!pickedProducts.size}>
                 <Save className="h-4 w-4" />
@@ -274,6 +300,20 @@ export function ScanPanel({ project, latest, canWrite }: { project: Project; lat
         </div>
       )}
     </Card>
+  );
+}
+
+function MismatchNote({ text, href, cta }: { text: string; href: string; cta: string }) {
+  return (
+    <div className="mx-5 mt-4 flex flex-col gap-3 rounded-lg border border-warning/40 bg-warning-soft px-4 py-3 text-sm text-text sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex gap-2">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+        <span>{text}</span>
+      </div>
+      <Link href={href} className="shrink-0 font-medium text-primary hover:underline">
+        {cta} →
+      </Link>
+    </div>
   );
 }
 

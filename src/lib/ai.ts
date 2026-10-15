@@ -389,12 +389,14 @@ export type SiteScanResult = z.infer<typeof SiteScanSchema>;
 
 export async function scanSiteContent(input: {
   project: Project;
+  /** false = website của doanh nghiệp khác (khách tiềm năng/đối thủ) → không gán thông tin dự án */
+  ownSite: boolean;
   pages: { url: string; title: string; text: string }[];
   facts: { homeLang: string | null; hreflang: string[] };
   markets: string[];
   staffLocale: string;
 }): Promise<SiteScanResult> {
-  const { project, pages, facts, markets, staffLocale } = input;
+  const { project, ownSite, pages, facts, markets, staffLocale } = input;
   return structured(
     SiteScanSchema,
     `Extract what a company sells from its own website, then propose seed keywords for export-market SEO.
@@ -406,7 +408,7 @@ STRICT RULES — no fabrication:
 - Seed keywords are your suggestions (not facts) but must target only products/services you listed.
 Write category, reason and observations in ${localeLabel(staffLocale)}. Write each seed keyword in the buyer language of its market.
 
-Company: ${project.name} (${project.domain}); industry noted by staff: ${project.industry ?? "n/a"}
+${ownSite ? `Company: ${project.name} (${project.domain}); industry noted by staff: ${project.industry ?? "n/a"}` : "Company: identify it only from the pages below (this website is not the staff's current project)."}
 Requested markets: ${markets.map((m) => `${countryName(m, "en")} (${m.toUpperCase()})`).join(", ")}
 Measured facts: homepage <html lang>="${facts.homeLang ?? "none"}", hreflang versions: ${facts.hreflang.join(", ") || "none"}
 
