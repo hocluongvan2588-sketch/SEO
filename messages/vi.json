@@ -582,6 +582,6 @@
     "delete": "Xóa",
     "confirmDelete": "Xóa báo cáo này?",
     "validUntil": "hiệu lực đến {date}",
-    "printHint": "Bấm Tải PDF → chọn “Lưu dưới dạng PDF” (Save as PDF). Nên bật “Đồ họa nền” (Background graphics) để giữ màu."
+    "printHint": "Bấm Tải PDF → chọn “Lưu dưới dạng PDF”. Trong “Tùy chọn khác”: Lề = Mặc định, bật “Đồ họa nền” để giữ màu, tắt “Đầu trang và chân trang” của trình duyệt."
   }
 }

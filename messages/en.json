@@ -582,6 +582,6 @@
     "delete": "Delete",
     "confirmDelete": "Delete this report?",
     "validUntil": "valid until {date}",
-    "printHint": "Click Download PDF → choose “Save as PDF”. Turn on “Background graphics” to keep the colors."
+    "printHint": "Click Download PDF → choose “Save as PDF”. Under “More settings”: Margins = Default, turn on “Background graphics”, turn off the browser's “Headers and footers”."
   }
 }
