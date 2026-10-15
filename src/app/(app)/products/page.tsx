@@ -73,7 +73,8 @@ export default async function ProductsPage() {
         // key theo dự án: đổi dự án → form làm mới với website của dự án mới
         <div key={active.id} className="space-y-6">
           {canWrite && adoptable.length > 0 && <AdoptScans projectId={active.id} scans={adoptable} />}
-          <ScanPanel project={active} latest={latest ?? null} canWrite={canWrite} />
+          {/* key theo lần quét: khi kết quả được chuyển về / thay đổi, khung quét hiển thị ngay mà không cần tải lại trang */}
+          <ScanPanel key={latest?.id ?? "none"} project={active} latest={latest ?? null} canWrite={canWrite} />
           <Catalog projectId={active.id} products={(products ?? []) as ProductRow[]} canWrite={canWrite} />
           {foreign.length > 0 && <ForeignScans projectName={active.name} scans={foreign} canWrite={canWrite} />}
         </div>
