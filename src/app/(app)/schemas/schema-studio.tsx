@@ -27,7 +27,7 @@ export function SchemaStudio({ project, saved, canWrite }: { project: Project; s
   const [locale, setLocale] = useState(project.default_locale);
   const [name, setName] = useState("");
   const [values, setValues] = useState<SchemaInput>({ name: project.name, url: `https://${project.domain}` });
-  const [aiUrl, setAiUrl] = useState(`https://${project.domain}/`);
+  const [aiUrl, setAiUrl] = useState("");
   const [aiResult, setAiResult] = useState<{ schemaType: string; name: string; jsonLd: Record<string, unknown>; notes: string } | null>(null);
   const [generating, startGen] = useTransition();
   const [saving, startSave] = useTransition();
@@ -149,12 +149,12 @@ export function SchemaStudio({ project, saved, canWrite }: { project: Project; s
             ) : (
               <>
                 <Field label={t("pageUrl")} hint={t("aiHint")}>
-                  <Input value={aiUrl} onChange={(e) => setAiUrl(e.target.value)} />
+                  <Input value={aiUrl} onChange={(e) => setAiUrl(e.target.value)} placeholder={`https://${project.domain}/…`} />
                 </Field>
                 <Button
                   className="w-full"
                   loading={generating}
-                  disabled={!canWrite}
+                  disabled={!canWrite || !aiUrl.trim()}
                   onClick={() =>
                     startGen(async () => {
                       const res = await generateSchemaFromUrl({ projectId: project.id, url: aiUrl, locale });

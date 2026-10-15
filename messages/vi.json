@@ -641,6 +641,7 @@
     "detailsHint": "Chỉ ghi thông tin khách xác nhận",
     "certsHint": "Cách nhau bằng dấu phẩy",
     "save": "Lưu",
-    "saved": "Đã lưu"
+    "saved": "Đã lưu",
+    "urlPh": "VD: https://congtykhach.com"
   }
 }

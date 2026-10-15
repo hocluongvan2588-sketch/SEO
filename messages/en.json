@@ -641,6 +641,7 @@
     "detailsHint": "Only what the client confirms",
     "certsHint": "Comma-separated",
     "save": "Save",
-    "saved": "Saved"
+    "saved": "Saved",
+    "urlPh": "e.g. https://client-company.com"
   }
 }

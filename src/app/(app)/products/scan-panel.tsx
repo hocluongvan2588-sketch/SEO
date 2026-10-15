@@ -20,7 +20,8 @@ export function ScanPanel({ project, latest, canWrite }: { project: Project; lat
   const format = useFormatter();
   const router = useRouter();
   const costLabel = useCostLabel();
-  const [url, setUrl] = useState(latest?.url ?? `https://${project.domain}`);
+  // Để trống: mỗi lần quét thường là website khách khác nhau
+  const [url, setUrl] = useState("");
   const [markets, setMarkets] = useState<string[]>(
     (project.markets ?? []).filter((m) => m !== project.country).slice(0, 3).length
       ? (project.markets ?? []).filter((m) => m !== project.country).slice(0, 3)
@@ -63,14 +64,14 @@ export function ScanPanel({ project, latest, canWrite }: { project: Project; lat
       {/* Ba cột căn theo đỉnh: nhãn cùng hàng, ô nhập cùng hàng; thẻ thị trường nằm dưới ô chọn */}
       <div className="grid gap-4 border-b border-border p-5 lg:grid-cols-[1fr_1fr_auto] lg:items-start">
         <Field label={t("url")}>
-          <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" />
+          <Input inputMode="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder={t("urlPh")} />
         </Field>
         <Field label={`${t("markets")} (${t("marketsHint").toLowerCase()})`}>
           <CountryMultiSelect value={markets} onChange={(m) => setMarkets(m.slice(0, 6))} pinned={project.markets} chipsBelow />
         </Field>
         <div>
           <Label className="invisible hidden lg:block">&nbsp;</Label>
-          <Button className="w-full lg:w-auto" onClick={run} loading={scanning} disabled={!canWrite || !markets.length || !url}>
+          <Button className="w-full lg:w-auto" onClick={run} loading={scanning} disabled={!canWrite || !markets.length || !url.trim()}>
             {!scanning && <Search className="h-4 w-4" />}
             {t("scan")}
           </Button>
