@@ -18,7 +18,10 @@ export function ResearchPanel({
   history,
   canWrite,
   onSaved,
+  prefill,
 }: {
+  /** Điền sẵn từ khóa gốc (vd. từ trang Sản phẩm) */
+  prefill?: { seed: string; locale?: string; country?: string };
   project: Project;
   history: { id: string; seed: string; locale: string; country: string; created_at: string }[];
   canWrite: boolean;
@@ -30,9 +33,9 @@ export function ResearchPanel({
   const markets = project.markets?.length ? project.markets : [project.country];
   const format = useFormatter();
   const router = useRouter();
-  const [seed, setSeed] = useState("");
-  const [locale, setLocale] = useState(project.default_locale);
-  const [country, setCountry] = useState(project.country);
+  const [seed, setSeed] = useState(prefill?.seed ?? "");
+  const [locale, setLocale] = useState(prefill?.locale ?? project.default_locale);
+  const [country, setCountry] = useState(prefill?.country ?? project.country);
   const [result, setResult] = useState<(ResearchResult & { locale: string; country: string }) | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [running, startRun] = useTransition();

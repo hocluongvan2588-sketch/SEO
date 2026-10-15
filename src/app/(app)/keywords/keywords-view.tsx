@@ -15,8 +15,10 @@ export function KeywordsView({
   history,
   initialTab,
   canWrite,
+  prefill,
   ...list
 }: {
+  prefill?: { seed: string; locale?: string; country?: string };
   project: Project;
   keywords: Keyword[];
   total: number;
@@ -59,7 +61,7 @@ export function KeywordsView({
         <KeywordTable project={project} keywords={keywords} {...list} canWrite={canWrite} onResearch={() => setTab("research")} />
       </div>
       <div className={tab === "research" ? "" : "hidden"}>
-        <ResearchPanel project={project} history={history} canWrite={canWrite} onSaved={() => setTab("list")} />
+        <ResearchPanel project={project} history={history} prefill={prefill} canWrite={canWrite} onSaved={() => setTab("list")} />
       </div>
     </>
   );

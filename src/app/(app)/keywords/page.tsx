@@ -58,6 +58,11 @@ export default async function KeywordsPage({
         facets={{ countries: facets?.countries ?? [], clusters: facets?.clusters ?? [] }}
         history={history ?? []}
         initialTab={params.tab === "research" ? "research" : "list"}
+        prefill={
+          typeof params.seed === "string"
+            ? { seed: params.seed, locale: (params.hl as string) || undefined, country: (params.gl as string) || undefined }
+            : undefined
+        }
         canWrite={profile?.role !== "viewer"}
       />
     </>

@@ -25,6 +25,8 @@ export interface ReportData {
   rankings: { total: number; tracked: number; top3: number; top10: number; top30: number; best: { keyword: string; position: number; country: string }[] };
   competitors: { domain: string; appearances: number; bestRank: number }[];
   researchQueries: string[];
+  /** Sản phẩm đã xác nhận (nhập tay hoặc từ website có trích dẫn) */
+  products?: { name: string; category: string | null; certifications: string[] }[];
 }
 
 /** Trang mạng xã hội / bách khoa / sàn chung — không coi là đối thủ trực tiếp */
@@ -32,7 +34,7 @@ const NOT_COMPETITORS = /(^|\.)(linkedin|facebook|youtube|instagram|twitter|x|ti
 
 /** Gom dữ liệu đã có của dự án thành ảnh chụp dùng cho báo cáo. */
 export async function collectReportData(supabase: SupabaseClient, project: Project): Promise<ReportData> {
-  const [audits, keywords, ranked, stats, research] = await Promise.all([
+  const [audits, keywords, ranked, stats, research, products] = await Promise.all([
     supabase.from("audits").select("*").eq("project_id", project.id).order("created_at", { ascending: false }).limit(40),
     supabase
       .from("keywords")
@@ -51,6 +53,7 @@ export async function collectReportData(supabase: SupabaseClient, project: Proje
       .limit(10),
     supabase.rpc("keyword_stats", { p_project: project.id }).maybeSingle<Record<string, number>>(),
     supabase.from("keyword_research").select("seed, serp").eq("project_id", project.id).order("created_at", { ascending: false }).limit(5),
+    supabase.from("project_products").select("name, category, certifications").eq("project_id", project.id).limit(30),
   ]);
 
   // Audit mới nhất của mỗi URL, tối đa 6 trang
@@ -119,5 +122,6 @@ export async function collectReportData(supabase: SupabaseClient, project: Proje
       .sort((a, b) => b.appearances - a.appearances || a.bestRank - b.bestRank)
       .slice(0, 8),
     researchQueries: (research.data ?? []).map((r) => r.seed),
+    products: products.data ?? [],
   };
 }

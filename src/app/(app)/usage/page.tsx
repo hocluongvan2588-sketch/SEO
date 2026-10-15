@@ -21,7 +21,7 @@ interface UsageRow {
   cost_usd: number;
 }
 
-const FEATURES = ["research", "audit", "schema", "rankings", "cluster", "leads", "report"] as const;
+const FEATURES = ["research", "audit", "schema", "rankings", "cluster", "leads", "report", "scan"] as const;
 
 export default async function UsagePage() {
   const { supabase, profile } = await getWorkspace();

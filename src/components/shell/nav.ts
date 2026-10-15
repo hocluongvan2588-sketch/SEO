@@ -1,8 +1,9 @@
-import { BarChart3, Braces, FileText, FolderKanban, Handshake, LayoutDashboard, ScanSearch, Search, Settings, Wallet } from "lucide-react";
+import { BarChart3, Braces, FileText, FolderKanban, Handshake, LayoutDashboard, Package, ScanSearch, Search, Settings, Wallet } from "lucide-react";
 
 /** `adminOnly`: chỉ hiện cho Quản trị */
 export const NAV: { href: string; key: string; icon: typeof Wallet; adminOnly?: boolean }[] = [
   { href: "/", key: "dashboard", icon: LayoutDashboard },
+  { href: "/products", key: "products", icon: Package },
   { href: "/keywords", key: "keywords", icon: Search },
   { href: "/audits", key: "audits", icon: ScanSearch },
   { href: "/schemas", key: "schemas", icon: Braces },

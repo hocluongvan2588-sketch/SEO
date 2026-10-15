@@ -77,13 +77,16 @@ export async function analyzeKeywords(input: {
   country: string;
   serp: SerpResult;
   staffLocale: string;
+  /** Danh mục sản phẩm đã xác nhận của dự án */
+  products?: { name: string; details: string | null; certifications: string[] }[];
 }): Promise<KeywordAnalysis> {
-  const { project, seed, locale, country, serp, staffLocale } = input;
+  const { project, seed, locale, country, serp, staffLocale, products } = input;
   const result = await structured(
     KeywordAnalysisSchema,
     `Company: ${project.name} (${project.domain})
 Industry: ${project.industry ?? "n/a"}
 About: ${project.description ?? "n/a"}
+Confirmed products (only recommend keywords this company can actually serve): ${products?.length ? products.map((p) => `${p.name}${p.details ? ` (${p.details})` : ""}${p.certifications.length ? ` [${p.certifications.join(", ")}]` : ""}`).join("; ") : "not listed"}
 Target content language: ${localeLabel(locale)} (${locale})\nTarget market: ${countryName(country, "en")} (${country.toUpperCase()}) — Google results below are localized for this market
 Staff language for explanations: ${localeLabel(staffLocale)}
 
@@ -330,7 +333,7 @@ Rules:
 - Write everything in ${locale === "vi" ? "Vietnamese" : "English"}. Address the client as "${locale === "vi" ? "Quý công ty" : "your company"}"; refer to the consultancy as "${provider}".
 - Business language for a CEO. Short sentences. No technical jargon without a plain explanation.
 - Describe problems and opportunities, never step-by-step fixes or code (the fixes are part of the paid service).
-- Use only the data below. Keyword difficulty is an AI estimate and search volumes are not available — do not invent numbers.
+- Use only the data below. Mention products, certifications or services ONLY if they appear in the data (field "products"); never invent capacity, MOQ, certifications or markets. Keyword difficulty is an AI estimate and search volumes are not available — do not invent numbers.
 - If some data is missing (e.g. no keyword research or no rankings yet), say so briefly and turn it into a next step.
 
 Client website: ${project.name} (${project.domain})
@@ -340,6 +343,74 @@ Main country: ${countryName(project.country, "en")}; target markets: ${(project.
 
 Assessment data (JSON):
 ${JSON.stringify(data)}`,
+    "medium",
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Quét website khách: liệt kê sản phẩm + đề xuất từ khóa gốc (có trích dẫn nguồn)
+// ---------------------------------------------------------------------------
+const Evidence = {
+  evidence: z.string().describe("VERBATIM quote (5-25 words) copied exactly from the page text that proves this. Never paraphrase."),
+  source_url: z.string().describe("URL of the page the quote was copied from (one of the URLs given)"),
+};
+const SiteScanSchema = z.object({
+  business_type: z.string().describe("What the company is (e.g. manufacturer / OEM factory / brand / trader), only as stated on the site; 'Không rõ'/'Unknown' if not stated"),
+  products: z
+    .array(
+      z.object({
+        name: z.string().describe("Product or product line name as written on the site"),
+        category: z.string().describe("Short category in the staff language"),
+        details: z.string().describe("Specs/variants/ingredients/packaging stated on the site; empty string if none"),
+        ...Evidence,
+      }),
+    )
+    .describe("Only products actually listed on the pages. Max 15. Empty if none found."),
+  certifications: z
+    .array(z.object({ name: z.string(), ...Evidence }))
+    .describe("Only certifications/standards explicitly written on the pages (GMP, ISO 22716, HACCP, FDA...). Empty if none."),
+  services: z
+    .array(z.object({ name: z.string().describe("e.g. OEM, ODM, private label, export"), ...Evidence }))
+    .describe("Business services explicitly offered (OEM/private label/export...). Empty if none."),
+  seeds: z
+    .array(
+      z.object({
+        country: z.string().describe("ISO 3166-1 alpha-2 code, one of the requested markets"),
+        locale: z.string().describe("Language code buyers in that market search in, e.g. en, ja, de"),
+        keyword: z.string().describe("Seed keyword in that language, the way professional B2B buyers/importers would search"),
+        product: z.string().describe("Exact product name from the products list this targets, or '*' for company-level"),
+        reason: z.string().describe("1 sentence in the staff language"),
+      }),
+    )
+    .describe("3-6 seed keywords per requested market, based ONLY on the products/services found"),
+  observations: z.array(z.string()).describe("2-5 short notes in the staff language about gaps relevant to export SEO, based only on the pages (e.g. no English product pages)"),
+});
+export type SiteScanResult = z.infer<typeof SiteScanSchema>;
+
+export async function scanSiteContent(input: {
+  project: Project;
+  pages: { url: string; title: string; text: string }[];
+  facts: { homeLang: string | null; hreflang: string[] };
+  markets: string[];
+  staffLocale: string;
+}): Promise<SiteScanResult> {
+  const { project, pages, facts, markets, staffLocale } = input;
+  return structured(
+    SiteScanSchema,
+    `Extract what a company sells from its own website, then propose seed keywords for export-market SEO.
+
+STRICT RULES — no fabrication:
+- Use ONLY the page text below. Do not use outside knowledge about this company.
+- Every product, certification and service MUST include a verbatim quote copied character-for-character from the page text, plus the URL of that page. Quotes will be machine-checked against the pages; anything that cannot be found will be discarded.
+- If something is not on the pages, leave it out. Never guess certifications, capacity, MOQ or markets.
+- Seed keywords are your suggestions (not facts) but must target only products/services you listed.
+Write category, reason and observations in ${localeLabel(staffLocale)}. Write each seed keyword in the buyer language of its market.
+
+Company: ${project.name} (${project.domain}); industry noted by staff: ${project.industry ?? "n/a"}
+Requested markets: ${markets.map((m) => `${countryName(m, "en")} (${m.toUpperCase()})`).join(", ")}
+Measured facts: homepage <html lang>="${facts.homeLang ?? "none"}", hreflang versions: ${facts.hreflang.join(", ") || "none"}
+
+${pages.map((p, i) => `=== PAGE ${i + 1}: ${p.url}\nTitle: ${p.title}\n${p.text}`).join("\n\n")}`,
     "medium",
   );
 }

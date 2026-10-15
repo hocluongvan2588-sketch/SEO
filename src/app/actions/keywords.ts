@@ -46,8 +46,19 @@ export async function runKeywordResearch(input: {
     } = await metered(
       { supabase: session.supabase, userId: session.user.id, projectId: project.id, feature: "research", providers: ["brightdata", "claude"] },
       async () => {
-        const serp = await googleSearch(seed, { hl: input.locale, gl: input.country });
-        const ai = await analyzeKeywords({ project, seed, locale: input.locale, country: input.country, serp, staffLocale: lang });
+        const [serp, { data: products }] = await Promise.all([
+          googleSearch(seed, { hl: input.locale, gl: input.country }),
+          session.supabase.from("project_products").select("name, details, certifications").eq("project_id", project.id).limit(30),
+        ]);
+        const ai = await analyzeKeywords({
+          project,
+          seed,
+          locale: input.locale,
+          country: input.country,
+          serp,
+          staffLocale: lang,
+          products: products ?? undefined,
+        });
         return { serp, ai };
       },
     );
