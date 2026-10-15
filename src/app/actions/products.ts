@@ -226,3 +226,43 @@ export async function deleteProduct(id: string): Promise<ActionResult> {
     return fail(e);
   }
 }
+
+/** Xóa một lần quét (vd. quét nhầm website khác). Sản phẩm đã lưu vào danh mục không bị ảnh hưởng. */
+export async function deleteScan(id: string): Promise<ActionResult> {
+  try {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized");
+    const { error } = await session.supabase.from("site_scans").delete().eq("id", id);
+    if (error) throw error;
+    revalidatePath("/products");
+    return { ok: true, data: undefined };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/**
+ * Chuyển một lần quét sang dự án có domain trùng với website đã quét (dùng lại kết quả, không tốn phí quét lại).
+ * Chỉ cho chuyển khi domain khớp — không thể gán kết quả của website này cho doanh nghiệp khác.
+ */
+export async function moveScan(id: string, targetProjectId: string): Promise<ActionResult> {
+  try {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized");
+    const [{ data: scan, error: e1 }, { data: target, error: e2 }] = await Promise.all([
+      session.supabase.from("site_scans").select("url").eq("id", id).single(),
+      session.supabase.from("projects").select("domain").eq("id", targetProjectId).single(),
+    ]);
+    if (e1) throw e1;
+    if (e2) throw e2;
+    const host = hostOf(scan.url);
+    const own = hostOf(target.domain);
+    if (host !== own && !host.endsWith(`.${own}`)) throw new Error(`Website ${host} không thuộc dự án đích (${own})`);
+    const { error } = await session.supabase.from("site_scans").update({ project_id: targetProjectId }).eq("id", id);
+    if (error) throw error;
+    revalidatePath("/products");
+    return { ok: true, data: undefined };
+  } catch (e) {
+    return fail(e);
+  }
+}

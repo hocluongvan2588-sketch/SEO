@@ -645,6 +645,16 @@
     "urlPh": "e.g. https://client-company.com",
     "mismatchBefore": "{host} is not the current project's domain ({project} – {domain}). You can scan it for reference, but products can't be saved to this project. Create a separate project for this client.",
     "mismatchSave": "These results are for {host}, not project {project}, so they can't be saved to the catalog. Create a project for the client and scan again to save products.",
-    "createProjectFor": "Create project for {host}"
+    "createProjectFor": "Create project for {host}",
+    "foreignTitle": "Scans of other websites ({count})",
+    "foreignDesc": "Scans of websites that don't belong to project {project}. Move them to the right project to reuse them (no new scan cost), or delete them.",
+    "foundCount": "{count} products found",
+    "moveTo": "Move to project {name}",
+    "moved": "Moved to project {name}",
+    "confirmDeleteScan": "Delete the scan of {host}? Products already saved to the catalog are not affected.",
+    "scanDeleted": "Scan deleted",
+    "adoptText": "{host} was scanned on {date} in project {from}. You can reuse that result for this project without paying for a new scan.",
+    "adopt": "Reuse result",
+    "adopted": "Scan moved to this project"
   }
 }

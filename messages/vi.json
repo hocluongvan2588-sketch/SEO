@@ -645,6 +645,16 @@
     "urlPh": "VD: https://congtykhach.com",
     "mismatchBefore": "{host} khác domain của dự án đang chọn ({project} – {domain}). Có thể quét để tham khảo, nhưng sản phẩm sẽ không lưu được vào dự án này. Nên tạo dự án riêng cho khách.",
     "mismatchSave": "Kết quả này là của {host}, không thuộc dự án {project} nên không lưu vào danh mục. Tạo dự án cho khách rồi quét lại để lưu sản phẩm.",
-    "createProjectFor": "Tạo dự án cho {host}"
+    "createProjectFor": "Tạo dự án cho {host}",
+    "foreignTitle": "Kết quả quét website khác ({count})",
+    "foreignDesc": "Các lần quét website không thuộc dự án {project}. Chuyển sang đúng dự án để dùng lại (không tốn phí quét lại), hoặc xóa.",
+    "foundCount": "{count} sản phẩm tìm thấy",
+    "moveTo": "Chuyển sang dự án {name}",
+    "moved": "Đã chuyển sang dự án {name}",
+    "confirmDeleteScan": "Xóa kết quả quét {host}? Sản phẩm đã lưu vào danh mục không bị ảnh hưởng.",
+    "scanDeleted": "Đã xóa kết quả quét",
+    "adoptText": "Website {host} đã được quét lúc {date} trong dự án {from}. Có thể dùng lại kết quả này cho dự án hiện tại mà không tốn phí quét lại.",
+    "adopt": "Dùng lại kết quả",
+    "adopted": "Đã chuyển kết quả quét về dự án này"
   }
 }
