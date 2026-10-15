@@ -397,7 +397,32 @@
     "jobTitle": "Job title",
     "jobTitlePh": "e.g. SEO Consultant",
     "phone": "Phone",
-    "contactHint": "Your name, title, phone and email appear as the contact on client reports."
+    "contactHint": "Your name, title, phone and email appear as the contact on client reports.",
+    "addStaff": "Add staff",
+    "staffEmail": "Login email",
+    "domainHint": "Only @{domain} emails may sign in",
+    "role": "Role",
+    "roleHint": {
+      "admin": "Full access incl. Costs, budgets and staff management",
+      "editor": "All SEO work (research, audits, reports…), no Costs page",
+      "viewer": "Read only, no paid actions, no edits"
+    },
+    "tempPassword": "Temporary password",
+    "tempPasswordHint": "A random password is pre-filled; staff should change it after first login (Settings → Change password)",
+    "regenerate": "Generate another",
+    "createAccount": "Create account",
+    "createdDesc": "Account {email} created. Send these details to the staff member:",
+    "credentialsMessage": "Hi {name}, your Vexim Growth account is ready:\n• Sign in: {url}\n• Email: {email}\n• Temporary password: {password}\nAfter signing in, go to Settings → Change password to set your own.",
+    "passwordOnce": "The password is shown only once. If it's lost, reset it in Supabase (in-app reset coming later).",
+    "copyCredentials": "Copy",
+    "copied": "Copied",
+    "done": "Done",
+    "needServiceKey": "To add staff in the app, set the SUPABASE_SERVICE_ROLE_KEY environment variable on Vercel.",
+    "changePassword": "Change password",
+    "newPassword": "New password (min 8 characters)",
+    "confirmPassword": "Confirm new password",
+    "passwordMismatch": "Passwords don't match",
+    "passwordChanged": "Password changed"
   },
   "picker": {
     "search": "Search countries…",

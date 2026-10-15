@@ -397,7 +397,32 @@
     "jobTitle": "Chức danh",
     "jobTitlePh": "VD: Chuyên viên tư vấn SEO",
     "phone": "Số điện thoại",
-    "contactHint": "Tên, chức danh, số điện thoại và email hiện ở mục Người phụ trách trên báo cáo gửi khách."
+    "contactHint": "Tên, chức danh, số điện thoại và email hiện ở mục Người phụ trách trên báo cáo gửi khách.",
+    "addStaff": "Thêm nhân viên",
+    "staffEmail": "Email đăng nhập",
+    "domainHint": "Chỉ email @{domain} được phép đăng nhập",
+    "role": "Vai trò",
+    "roleHint": {
+      "admin": "Toàn quyền, gồm Chi phí, ngân sách và quản lý nhân viên",
+      "editor": "Làm mọi việc chuyên môn (chạy nghiên cứu, audit, báo cáo…), không xem Chi phí",
+      "viewer": "Chỉ xem, không chạy thao tác tốn phí, không sửa dữ liệu"
+    },
+    "tempPassword": "Mật khẩu tạm",
+    "tempPasswordHint": "Đã tạo sẵn mật khẩu ngẫu nhiên; nhân viên nên tự đổi sau lần đăng nhập đầu (Cài đặt → Đổi mật khẩu)",
+    "regenerate": "Tạo mật khẩu khác",
+    "createAccount": "Tạo tài khoản",
+    "createdDesc": "Đã tạo tài khoản {email}. Gửi thông tin dưới đây cho nhân viên (Zalo, email…):",
+    "credentialsMessage": "Chào {name}, tài khoản Vexim Growth của bạn đã sẵn sàng:\n• Đăng nhập: {url}\n• Email: {email}\n• Mật khẩu tạm: {password}\nSau khi đăng nhập, vào Cài đặt → Đổi mật khẩu để đặt mật khẩu riêng.",
+    "passwordOnce": "Mật khẩu chỉ hiện một lần. Nếu quên, tạo lại bằng cách đặt lại mật khẩu trong Supabase (sẽ có trong ứng dụng ở bản sau).",
+    "copyCredentials": "Sao chép",
+    "copied": "Đã sao chép",
+    "done": "Xong",
+    "needServiceKey": "Để thêm nhân viên ngay trong ứng dụng, cần biến môi trường SUPABASE_SERVICE_ROLE_KEY trên Vercel.",
+    "changePassword": "Đổi mật khẩu",
+    "newPassword": "Mật khẩu mới (tối thiểu 8 ký tự)",
+    "confirmPassword": "Nhập lại mật khẩu mới",
+    "passwordMismatch": "Hai mật khẩu không khớp",
+    "passwordChanged": "Đã đổi mật khẩu"
   },
   "picker": {
     "search": "Tìm quốc gia…",

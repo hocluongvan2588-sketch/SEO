@@ -57,6 +57,10 @@ Quy tắc mỗi lần chạy: từ khóa (trừ *Bỏ qua*) đủ 7 ngày chưa 
 
 Xem trước (không tốn phí): `curl -H "Authorization: Bearer $CRON_SECRET" "https://<domain>/api/cron/rankings?dry=1"`.
 
+### Tài khoản nhân viên
+
+Quản trị vào **Cài đặt → Thêm nhân viên**: nhập email, họ tên, vai trò và mật khẩu tạm (cần biến `SUPABASE_SERVICE_ROLE_KEY`). Hệ thống hiện sẵn đoạn thông tin đăng nhập để gửi cho nhân viên; nhân viên tự đổi mật khẩu ở **Cài đặt → Đổi mật khẩu**.
+
 ## Dành cho developer (Claude Code)
 - `.mcp.json` khai báo **Bright Data MCP**, token đọc từ biến môi trường `BRIGHTDATA_API_TOKEN`.
 - Plugin **SearchFIT SEO** và **Bright Data** được bật qua tài khoản claude.ai; dùng các skill như `/searchfit-seo:seo-audit`, `/searchfit-seo:schema-markup` khi phát triển.

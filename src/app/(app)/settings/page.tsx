@@ -3,13 +3,19 @@ import { CheckCircle2, CircleAlert, Plug, Users } from "lucide-react";
 import { Badge, Card, CardHeader, PageHeader } from "@/components/ui";
 import { getWorkspace } from "@/lib/context";
 import type { Profile } from "@/lib/types";
+import { headers } from "next/headers";
 import { ProfileForm, RoleSelect } from "./settings-forms";
+import { AddStaffButton, PasswordForm } from "./staff-forms";
 
 export default async function SettingsPage() {
   const { supabase, profile, user } = await getWorkspace();
   const t = await getTranslations("settings");
   const { data: team } = await supabase.from("profiles").select("*").order("created_at");
   const isAdmin = profile?.role === "admin";
+  const h = await headers();
+  const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}`}/login`;
+  // Tạo tài khoản cần khóa service role (đã dùng cho cron)
+  const canCreate = isAdmin && Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   const integrations = [
     { name: "Supabase", ok: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL), detail: process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/^https?:\/\//, "") },
@@ -25,6 +31,10 @@ export default async function SettingsPage() {
           <CardHeader title={t("profile")} description={user.email} />
           <div className="p-5">
             <ProfileForm name={profile?.full_name ?? ""} jobTitle={profile?.job_title ?? ""} phone={profile?.phone ?? ""} />
+            <div className="mt-6 border-t border-border pt-5">
+              <h3 className="mb-3 text-sm font-semibold text-text">{t("changePassword")}</h3>
+              <PasswordForm />
+            </div>
           </div>
         </Card>
 
@@ -45,7 +55,12 @@ export default async function SettingsPage() {
         </Card>
 
         <Card className="lg:col-span-2">
-          <CardHeader title={t("team", { count: team?.length ?? 0 })} description={t("teamDesc")} icon={<Users className="h-4 w-4" />} />
+          <CardHeader
+            title={t("team", { count: team?.length ?? 0 })}
+            description={isAdmin && !canCreate ? t("needServiceKey") : t("teamDesc")}
+            icon={<Users className="h-4 w-4" />}
+            action={canCreate && <AddStaffButton allowedDomain={process.env.ALLOWED_EMAIL_DOMAIN || null} loginUrl={loginUrl} />}
+          />
           <ul className="divide-y divide-border">
             {((team ?? []) as Profile[]).map((m) => (
               <li key={m.id} className="flex items-center gap-3 px-5 py-3">

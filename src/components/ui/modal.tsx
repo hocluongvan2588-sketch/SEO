@@ -28,6 +28,9 @@ export function Modal({
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-[8vh]" onClick={onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={typeof title === "string" ? title : undefined}
         className={cn("w-full max-w-lg rounded-xl border border-border bg-surface shadow-2xl", className)}
         onClick={(e) => e.stopPropagation()}
       >
